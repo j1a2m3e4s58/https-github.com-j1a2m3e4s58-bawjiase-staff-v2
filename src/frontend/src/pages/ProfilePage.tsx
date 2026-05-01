@@ -196,12 +196,14 @@ export default function ProfilePage() {
       return;
     }
 
-    setFullname(user.fullname);
-    setPhone(user.phone);
-    setDepartment(user.department);
-    setBranch(user.branch);
+    if (!isEditing) {
+      setFullname(user.fullname);
+      setPhone(user.phone);
+      setDepartment(user.department);
+      setBranch(user.branch);
+    }
     setIsLoading(false);
-  }, [user]);
+  }, [isEditing, user]);
 
   useEffect(() => {
     if (!user) return;
@@ -213,10 +215,12 @@ export default function ProfilePage() {
         const profile = await apiGetMyProfile(userId);
         if (!mounted || !profile) return;
         updateUser(profile);
-        setFullname(profile.fullname);
-        setPhone(profile.phone);
-        setDepartment(profile.department);
-        setBranch(profile.branch);
+        if (!isEditing) {
+          setFullname(profile.fullname);
+          setPhone(profile.phone);
+          setDepartment(profile.department);
+          setBranch(profile.branch);
+        }
       } catch {
         // keep current local state
       }
@@ -226,7 +230,7 @@ export default function ProfilePage() {
     return () => {
       mounted = false;
     };
-  }, [user?.id]);
+  }, [isEditing, user?.id]);
 
   useEffect(() => {
     return () => {
