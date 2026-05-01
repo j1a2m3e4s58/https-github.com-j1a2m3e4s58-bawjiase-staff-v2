@@ -425,7 +425,7 @@ export default function SupervisorManagementPage() {
                   </div>
 
                   <div className="grid gap-4 xl:grid-cols-2">
-                    <div className="rounded-xl border border-border/50 bg-background/40 p-4">
+            <div className="panel-shell panel-shell-md border border-border/50 bg-background/40 p-4">
                       <div className="flex items-start gap-3">
                         <UserX className="mt-0.5 h-5 w-5 text-destructive" />
                         <div className="flex-1 space-y-3">
@@ -450,7 +450,7 @@ export default function SupervisorManagementPage() {
                       </div>
                     </div>
 
-                    <div className="rounded-xl border border-border/50 bg-background/40 p-4">
+            <div className="panel-shell panel-shell-md border border-border/50 bg-background/40 p-4">
                       <div className="flex items-start gap-3">
                         <ArrowRightLeft className="mt-0.5 h-5 w-5 text-primary" />
                         <div className="flex-1 space-y-3">
@@ -496,7 +496,7 @@ export default function SupervisorManagementPage() {
                   </div>
 
                   <div className="grid gap-6 xl:grid-cols-2">
-                    <div className="space-y-4 rounded-xl border border-border/50 bg-background/40 p-4">
+              <div className="panel-shell panel-shell-md space-y-4 border border-border/50 bg-background/40 p-4">
                       <div className="space-y-1">
                         <Label>Role</Label>
                         <Select
@@ -550,7 +550,7 @@ export default function SupervisorManagementPage() {
                       </p>
                     </div>
 
-                    <div className="space-y-4 rounded-xl border border-border/50 bg-background/40 p-4">
+              <div className="panel-shell panel-shell-md space-y-4 border border-border/50 bg-background/40 p-4">
                       <div className="space-y-1">
                         <Label>Managed Branches</Label>
                         <p className="text-xs text-muted-foreground">
@@ -595,7 +595,7 @@ export default function SupervisorManagementPage() {
                           return (
                             <div
                               key={branch}
-                              className="space-y-3 rounded-xl border border-border/50 bg-background/40 p-4"
+                    className="panel-shell panel-shell-md space-y-3 border border-border/50 bg-background/40 p-4"
                             >
                               <div className="flex items-center justify-between gap-3">
                                 <h4 className="font-medium text-foreground">{branch}</h4>
@@ -631,7 +631,7 @@ export default function SupervisorManagementPage() {
                           );
                         })}
                       </div>
-                      <div className="rounded-xl border border-border/50 bg-background/40 p-4 space-y-3">
+              <div className="panel-shell panel-shell-md border border-border/50 bg-background/40 p-4 space-y-3">
                         <div>
                           <h4 className="font-medium text-foreground">Supervisor scope summary</h4>
                           <p className="text-xs text-muted-foreground">

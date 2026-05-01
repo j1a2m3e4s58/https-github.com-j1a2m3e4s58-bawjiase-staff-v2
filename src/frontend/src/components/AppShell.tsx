@@ -591,7 +591,7 @@ function DesktopTopNav() {
   const visibleItems = topNavItems.filter((item) => canSeeNavItem(user, item));
 
   return (
-    <header className="sticky top-4 z-40 mx-4 mt-4 glass-card-elevated rounded-2xl border border-border/40 px-4 py-3">
+    <header className="sticky top-4 z-40 mx-4 mt-4 glass-card-elevated border border-border/40 px-4 py-3">
       <div className="flex items-center gap-3">
         <Link to="/" className="flex items-center gap-3 w-[220px] shrink-0">
           <BCBBadge size="md" />

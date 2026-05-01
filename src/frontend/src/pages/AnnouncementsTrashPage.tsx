@@ -71,7 +71,7 @@ function TrashedCard({
 
   return (
     <div
-      className="glass-card rounded-xl p-5 flex items-start gap-4 opacity-80"
+      className="glass-card p-5 flex items-start gap-4 opacity-80"
       data-ocid={`trash.item.${ann.id}`}
     >
       <div className="flex-1 min-w-0">

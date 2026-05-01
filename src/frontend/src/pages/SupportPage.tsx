@@ -544,7 +544,7 @@ function AmendmentForm({ onSubmitted }: { onSubmitted: () => void }) {
           </div>
 
           {form.requestType === "ROLE CHANGE" && (
-            <div className="rounded-xl border bg-muted/20 p-4 md:col-span-2">
+                  <div className="panel-shell panel-shell-md border bg-muted/20 p-4 md:col-span-2">
               <Field label="If Role Change, what is the new role?">
                 <TextInput
                   id="amendment-new-role"
@@ -558,7 +558,7 @@ function AmendmentForm({ onSubmitted }: { onSubmitted: () => void }) {
           )}
 
           {form.requestType === "DEPARTMENTAL CHANGE" && (
-            <div className="rounded-xl border bg-muted/20 p-4 md:col-span-2">
+                  <div className="panel-shell panel-shell-md border bg-muted/20 p-4 md:col-span-2">
               <Field label="If Departmental Change, Indicate:">
                 <SelectInput
                   id="amendment-department-change"
@@ -573,7 +573,7 @@ function AmendmentForm({ onSubmitted }: { onSubmitted: () => void }) {
           )}
 
           {form.requestType === "TRANSFER OF PROFILE" && (
-            <div className="rounded-xl border bg-muted/20 p-4 md:col-span-2">
+                  <div className="panel-shell panel-shell-md border bg-muted/20 p-4 md:col-span-2">
               <Field label="If Transfer of Profile, where are you transferring to?">
                 <SelectInput
                   id="amendment-transfer-location"
@@ -691,7 +691,7 @@ function RecentIncidents({ refreshKey }: { refreshKey: number }) {
         />
       ) : null}
       {incidents.slice(0, visibleCount).map((incident) => (
-        <div key={incident.id} className="glass-card rounded-xl p-4">
+                <div key={incident.id} className="glass-card p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">
@@ -801,7 +801,7 @@ function RecentAmendments({ refreshKey }: { refreshKey: number }) {
         />
       ) : null}
       {amendments.slice(0, visibleCount).map((amendment) => (
-        <div key={amendment.id} className="glass-card rounded-xl p-4">
+                <div key={amendment.id} className="glass-card p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">
@@ -884,7 +884,7 @@ export default function SupportPage() {
           </TabsList>
 
           <TabsContent value="incident" className="space-y-6 mt-4">
-            <div className="glass-card-elevated rounded-2xl p-6">
+          <div className="glass-card-elevated p-6">
               <h2 className="text-base font-semibold text-foreground mb-4">
                 Submit an Incident Report
               </h2>
@@ -902,7 +902,7 @@ export default function SupportPage() {
           </TabsContent>
 
           <TabsContent value="amendment" className="space-y-6 mt-4">
-            <div className="glass-card-elevated rounded-2xl p-6">
+          <div className="glass-card-elevated p-6">
               <h2 className="text-base font-semibold text-foreground mb-4">
                 Request a T24 Amendment
               </h2>
