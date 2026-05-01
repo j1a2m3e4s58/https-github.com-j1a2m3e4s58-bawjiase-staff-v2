@@ -29,7 +29,7 @@ export function StatCard({
   return (
     <div
       className={cn(
-        "glass-card p-5 flex items-start gap-4",
+        "glass-card rounded-xl p-5 flex items-start gap-4",
         className,
       )}
       data-ocid={ocid}

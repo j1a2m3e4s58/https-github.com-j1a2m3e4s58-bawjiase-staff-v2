@@ -399,7 +399,7 @@ export default function AuditLogsPage() {
           </div>
         </div>
 
-      <div className="glass-card p-3 flex flex-wrap items-center gap-3">
+        <div className="glass-card rounded-xl p-3 flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
@@ -524,7 +524,7 @@ export default function AuditLogsPage() {
                     </span>
                   </div>
 
-      <div className="glass-card overflow-hidden">
+                  <div className="glass-card rounded-xl overflow-hidden">
                     {groupLogs.map((log, i) => (
                       <LogRow
                         key={log.id}

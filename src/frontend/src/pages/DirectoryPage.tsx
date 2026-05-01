@@ -130,7 +130,7 @@ function OnlineSummary({ staff }: { staff: User[] }) {
 
   return (
     <div
-              className="flex flex-wrap items-center gap-2 glass-card px-4 py-3 text-sm"
+      className="flex flex-wrap items-center gap-2 glass-card rounded-xl px-4 py-3 text-sm"
       data-ocid="directory.online_summary"
     >
       <span className="flex items-center gap-1.5 font-semibold text-foreground">
@@ -181,7 +181,7 @@ function StaffCard({
 
   return (
     <div
-                className="glass-card p-4 flex flex-col gap-3 hover:glass-card-elevated transition-smooth cursor-default group"
+      className="glass-card rounded-xl p-4 flex flex-col gap-3 hover:glass-card-elevated transition-smooth cursor-default group"
       data-ocid={`directory.staff_card.item.${index}`}
     >
       <div className="flex items-start gap-3">
@@ -683,7 +683,7 @@ export default function DirectoryPage() {
 
             {grouped.length === 0 ? (
               <div
-            className="text-center py-16 glass-card"
+                className="text-center py-16 glass-card rounded-xl"
                 data-ocid="directory.empty_state"
               >
                 <Users className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />

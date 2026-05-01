@@ -673,7 +673,7 @@ export default function FormsPage() {
         <div className="flex justify-end">
           <LiveSyncBadge eventNames={[]} />
         </div>
-      <div className="glass-card p-5 space-y-5">
+        <div className="glass-card rounded-xl p-5 space-y-5">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
               <h1 className="font-display text-2xl font-bold text-foreground flex items-center gap-2">
