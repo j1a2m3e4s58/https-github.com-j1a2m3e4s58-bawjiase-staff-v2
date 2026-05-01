@@ -38,7 +38,7 @@ export function ActivityLogPanel() {
   }, []);
 
   return (
-    <div className="glass-card rounded-xl p-5 space-y-4">
+    <div className="glass-card p-5 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="font-display text-lg font-bold text-foreground flex items-center gap-2">
@@ -65,7 +65,7 @@ export function ActivityLogPanel() {
       </div>
 
       {entries.length === 0 ? (
-        <div className="rounded-xl border border-border/50 bg-muted/20 px-4 py-5 text-sm text-muted-foreground">
+        <div className="panel-shell panel-shell-md border border-border/50 bg-muted/20 px-4 py-5 text-sm text-muted-foreground">
           Actions like profile updates, staff assignments, uploads, and cleanup
           will appear here.
         </div>
@@ -74,7 +74,7 @@ export function ActivityLogPanel() {
           {entries.slice(0, 6).map((entry) => (
             <div
               key={entry.id}
-              className="rounded-xl border border-border/50 bg-background/40 px-4 py-3"
+              className="panel-shell panel-shell-md border border-border/50 bg-background/40 px-4 py-3"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">

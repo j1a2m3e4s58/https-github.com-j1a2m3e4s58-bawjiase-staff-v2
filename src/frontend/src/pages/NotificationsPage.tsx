@@ -336,7 +336,7 @@ export default function NotificationsPage() {
 
         {isLoading ? (
           <div
-            className="glass-card rounded-xl divide-y divide-border/30"
+      className="glass-card divide-y divide-border/30"
             data-ocid="notifications.loading_state"
           >
             {[1, 2, 3, 4, 5].map((i) => (
@@ -357,7 +357,7 @@ export default function NotificationsPage() {
                 <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
                   {label}
                 </h2>
-                <div className="glass-card rounded-xl overflow-hidden divide-y divide-border/20">
+      <div className="glass-card overflow-hidden divide-y divide-border/20">
                   {items.map((notif, i) => (
                     <NotifItem
                       key={notif.id}

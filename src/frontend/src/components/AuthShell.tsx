@@ -46,7 +46,7 @@ export function AuthShell({ children, className }: AuthShellProps) {
       <div className="relative flex h-full items-center justify-center px-4 py-8">
         <div
           className={cn(
-            "relative mt-12 w-full max-w-md rounded-2xl glass-card-elevated px-6 pb-6 pt-20 shadow-glass-dark",
+            "relative mt-12 w-full max-w-md glass-card-elevated px-6 pb-6 pt-20 shadow-glass-dark",
             className,
           )}
         >

@@ -8,6 +8,10 @@
     --font-body: "DM Sans", sans-serif;
     --font-mono: "Geist Mono", monospace;
     --radius: 0.75rem;
+    --panel-radius-wide: 1.9rem 0.95rem 1.9rem 0.95rem;
+    --panel-radius-compact: 1.35rem 0.65rem 1.35rem 0.65rem;
+    --panel-highlight: rgba(255, 255, 255, 0.22);
+    --panel-glow: rgba(104, 182, 255, 0.16);
 
     --background: 0.98 0.01 250;
     --foreground: 0.18 0.02 250;
@@ -96,6 +100,8 @@
 
     --glass-light: rgba(30, 30, 40, 0.6);
     --glass-border: rgba(255, 255, 255, 0.1);
+    --panel-highlight: rgba(255, 255, 255, 0.08);
+    --panel-glow: rgba(63, 137, 255, 0.18);
   }
 
   * {
@@ -129,6 +135,49 @@
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
+  .panel-shell {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .panel-shell::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(135deg, var(--panel-highlight) 0%, transparent 30%),
+      radial-gradient(circle at top right, var(--panel-glow) 0%, transparent 42%);
+    opacity: 0.9;
+    z-index: 0;
+  }
+
+  .panel-shell::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: inherit;
+    clip-path: inset(0 round inherit);
+    opacity: 0.7;
+    z-index: 0;
+  }
+
+  .panel-shell > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .panel-shell-md {
+    border-radius: var(--panel-radius-compact) !important;
+  }
+
+  .panel-shell-lg {
+    border-radius: var(--panel-radius-wide) !important;
+  }
+
   .app-shell-surface {
     @apply bg-background;
   }
@@ -141,11 +190,11 @@
   }
 
   .glass-card {
-    @apply bg-white/40 dark:bg-[rgba(30,30,40,0.5)] backdrop-blur-md border border-white/20 dark:border-white/10;
+    @apply panel-shell panel-shell-md bg-white/40 dark:bg-[rgba(30,30,40,0.5)] backdrop-blur-md border border-white/20 dark:border-white/10;
   }
 
   .glass-card-elevated {
-    @apply bg-white/50 dark:bg-[rgba(30,30,40,0.7)] backdrop-blur-lg border border-white/30 dark:border-white/15 shadow-lg;
+    @apply panel-shell panel-shell-lg bg-white/50 dark:bg-[rgba(30,30,40,0.7)] backdrop-blur-lg border border-white/30 dark:border-white/15 shadow-lg;
   }
 
   .glass-input {

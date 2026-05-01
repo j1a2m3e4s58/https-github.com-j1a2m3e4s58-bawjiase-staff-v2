@@ -263,7 +263,7 @@ function AnnouncementCard({
 
   return (
     <div
-      className="glass-card rounded-xl p-5 group relative"
+              className="glass-card p-5 group relative"
       data-ocid={`announcements.item.${ann.id}`}
     >
       <div className="flex items-start gap-2 mb-2">

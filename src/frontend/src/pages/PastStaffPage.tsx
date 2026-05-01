@@ -73,7 +73,7 @@ function PastStaffRow({
 
   return (
     <div
-      className="flex items-center gap-4 px-4 py-3 glass-card rounded-xl hover:glass-card-elevated transition-smooth"
+      className="flex items-center gap-4 px-4 py-3 glass-card hover:glass-card-elevated transition-smooth"
       data-ocid={`past_staff.item.${index}`}
     >
       {/* Avatar */}

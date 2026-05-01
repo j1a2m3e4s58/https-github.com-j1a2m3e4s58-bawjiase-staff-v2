@@ -112,7 +112,7 @@ function SummaryStrip({
 
   return (
     <div className="grid grid-cols-2 gap-4">
-      <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+      <div className="glass-card p-4 flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-yellow-500/15 flex items-center justify-center">
           <AlertCircle className="h-5 w-5 text-yellow-500" />
         </div>
@@ -123,7 +123,7 @@ function SummaryStrip({
           <div className="text-xs text-muted-foreground">Open Incidents</div>
         </div>
       </div>
-      <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+      <div className="glass-card p-4 flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center">
           <UserCog className="h-5 w-5 text-cyan-500" />
         </div>
@@ -251,7 +251,7 @@ function IncidentsSection({ onDataChanged }: { onDataChanged: () => void }) {
   }
 
   return (
-    <div className="glass-card rounded-xl overflow-hidden">
+      <div className="glass-card overflow-hidden">
       <div className="p-5 border-b border-border/40 flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h2 className="font-display text-xl font-bold text-foreground flex items-center gap-2">
@@ -570,7 +570,7 @@ function AmendmentsSection({ onDataChanged }: { onDataChanged: () => void }) {
   }
 
   return (
-    <div className="glass-card rounded-xl overflow-hidden">
+      <div className="glass-card overflow-hidden">
       <div className="p-5 border-b border-border/40 flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h2 className="font-display text-xl font-bold text-foreground flex items-center gap-2">
@@ -842,7 +842,7 @@ export default function SupportAdminPage() {
         className="max-w-6xl mx-auto space-y-6"
         data-ocid="support_admin.page"
       >
-        <div className="flex items-center justify-between gap-4 flex-wrap glass-card rounded-xl p-4">
+      <div className="flex items-center justify-between gap-4 flex-wrap glass-card p-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center">
               <Shield className="h-5 w-5 text-primary" />
