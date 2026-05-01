@@ -49,7 +49,7 @@ export function SlowNetworkBanner() {
   if (!isOffline && !showSlow) return null;
 
   return (
-    <div className="sticky top-0 z-50 mx-4 mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm text-amber-950 shadow-sm dark:text-amber-200">
+      <div className="panel-sharp sticky top-0 z-50 mx-4 mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm text-amber-950 shadow-sm dark:text-amber-200">
       <div className="flex items-center gap-2">
         <WifiOff className="h-4 w-4 flex-shrink-0" />
         <span className="font-medium">

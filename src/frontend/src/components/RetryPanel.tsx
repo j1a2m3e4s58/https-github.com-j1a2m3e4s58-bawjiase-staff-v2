@@ -17,7 +17,7 @@ export function RetryPanel({
 }) {
   return (
     <div
-      className={`rounded-xl border border-border/50 bg-muted/20 ${
+      className={`panel-sharp rounded-xl border border-border/50 bg-muted/20 ${
         compact ? "p-4" : "p-5"
       }`}
     >

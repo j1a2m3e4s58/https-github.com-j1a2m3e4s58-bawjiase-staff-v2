@@ -155,7 +155,7 @@ function AppErrorScreen({
   const recentError = readLastFrontendError();
   return (
     <div className="min-h-screen bg-background px-6 py-10 flex items-center justify-center">
-      <div className="glass-card-elevated max-w-lg w-full rounded-2xl p-8 text-center space-y-4">
+      <div className="glass-card-elevated panel-sharp-lg max-w-lg w-full rounded-2xl p-8 text-center space-y-4">
         <img
           src={withBase("assets/images/bcb-logo.png")}
           alt="BCB Staff Portal"
@@ -169,7 +169,7 @@ function AppErrorScreen({
             {description}
           </p>
           {recentError ? (
-            <div className="rounded-xl border border-border/50 bg-muted/30 px-4 py-3 text-left text-xs text-muted-foreground">
+        <div className="panel-sharp rounded-xl border border-border/50 bg-muted/30 px-4 py-3 text-left text-xs text-muted-foreground">
               <div className="font-semibold text-foreground">
                 Crash reference: {recentError.id}
               </div>

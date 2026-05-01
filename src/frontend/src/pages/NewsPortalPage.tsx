@@ -299,7 +299,7 @@ function NewsPortalForm() {
     <>
       {publishing && (
         <div className="fixed inset-0 z-50 bg-background/75 backdrop-blur-sm flex items-center justify-center px-4">
-          <div className="glass-card-elevated rounded-2xl border border-border/50 px-6 py-5 flex items-center gap-3">
+      <div className="glass-card-elevated panel-sharp-lg rounded-2xl border border-border/50 px-6 py-5 flex items-center gap-3">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
             <div>
               <p className="font-display font-bold text-foreground">
@@ -319,7 +319,7 @@ function NewsPortalForm() {
             {actingScope}
           </div>
         ) : null}
-        <div className="rounded-2xl border border-border/40 bg-card/70 p-6 shadow-sm">
+      <div className="panel-sharp-lg rounded-2xl border border-border/40 bg-card/70 p-6 shadow-sm">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-full bg-primary/15 flex items-center justify-center text-primary">
@@ -455,7 +455,7 @@ function NewsPortalForm() {
               </TabsList>
 
               <TabsContent value="attach" className="mt-4">
-                <div className="rounded-2xl border border-border/40 bg-card/60 p-4 space-y-4">
+      <div className="panel-sharp-lg rounded-2xl border border-border/40 bg-card/60 p-4 space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="news-file">
                       Select File (Image/PDF/Word)
@@ -503,7 +503,7 @@ function NewsPortalForm() {
               </TabsContent>
 
               <TabsContent value="camera" className="mt-4">
-                <div className="rounded-2xl border border-border/40 bg-card/60 p-4 space-y-4">
+      <div className="panel-sharp-lg rounded-2xl border border-border/40 bg-card/60 p-4 space-y-4">
                   {!cameraReady && !capturedImage && (
                     <Button type="button" onClick={startCamera}>
                       <Camera className="mr-2 h-4 w-4" />
@@ -569,7 +569,7 @@ function NewsPortalForm() {
               </TabsContent>
 
               <TabsContent value="poll" className="mt-4">
-                <div className="rounded-2xl border border-border/40 bg-card/60 p-4 space-y-4">
+      <div className="panel-sharp-lg rounded-2xl border border-border/40 bg-card/60 p-4 space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="poll-question">Poll Question</Label>
                     <Input
@@ -655,7 +655,7 @@ export default function NewsPortalPage() {
   return (
     <AppShell>
       <div className="max-w-[980px] mx-auto space-y-6">
-        <div className="rounded-2xl border border-border/40 bg-card/60 px-6 py-5">
+      <div className="panel-sharp-lg rounded-2xl border border-border/40 bg-card/60 px-6 py-5">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
               <h1 className="font-display text-2xl font-bold text-foreground">
@@ -679,7 +679,7 @@ export default function NewsPortalPage() {
           roles={["SuperAdmin", "HRAdmin", "Supervisor"]}
           permission="announcements"
           fallback={
-            <div className="rounded-2xl border border-border/40 bg-card/60 p-8 text-center">
+      <div className="panel-sharp-lg rounded-2xl border border-border/40 bg-card/60 p-8 text-center">
               <Megaphone className="mx-auto h-10 w-10 text-primary" />
               <h2 className="mt-4 font-display text-xl font-bold text-foreground">
                 Admin access only
