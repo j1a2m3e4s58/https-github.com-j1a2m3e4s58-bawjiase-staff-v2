@@ -51,6 +51,9 @@
 
     --glass-light: rgba(255, 255, 255, 0.7);
     --glass-border: rgba(255, 255, 255, 0.2);
+    --panel-highlight: rgba(255, 255, 255, 0.16);
+    --panel-glow: rgba(104, 182, 255, 0.12);
+    --panel-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
   }
 
   .dark {
@@ -96,6 +99,9 @@
 
     --glass-light: rgba(30, 30, 40, 0.6);
     --glass-border: rgba(255, 255, 255, 0.1);
+    --panel-highlight: rgba(255, 255, 255, 0.06);
+    --panel-glow: rgba(76, 145, 255, 0.16);
+    --panel-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
   }
 
   * {
@@ -155,11 +161,53 @@
   .glass-card {
     @apply bg-white/40 dark:bg-[rgba(30,30,40,0.5)] backdrop-blur-md border border-white/20 dark:border-white/10;
     border-radius: 0 !important;
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    box-shadow: var(--panel-shadow);
   }
 
   .glass-card-elevated {
     @apply bg-white/50 dark:bg-[rgba(30,30,40,0.7)] backdrop-blur-lg border border-white/30 dark:border-white/15 shadow-lg;
     border-radius: 0 !important;
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    box-shadow:
+      var(--panel-shadow),
+      0 0 0 1px rgba(255, 255, 255, 0.08);
+  }
+
+  .glass-card::before,
+  .glass-card-elevated::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(180deg, var(--panel-highlight) 0%, transparent 24%),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.06) 0%, transparent 18%),
+      radial-gradient(circle at top right, var(--panel-glow) 0%, transparent 42%);
+    opacity: 0.9;
+    z-index: 0;
+  }
+
+  .glass-card::after,
+  .glass-card-elevated::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    opacity: 0.8;
+    z-index: 0;
+  }
+
+  .glass-card > *,
+  .glass-card-elevated > * {
+    position: relative;
+    z-index: 1;
   }
 
   .glass-input {
