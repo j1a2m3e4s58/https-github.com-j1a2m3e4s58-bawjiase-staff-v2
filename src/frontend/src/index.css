@@ -137,6 +137,10 @@
     border-radius: 0 !important;
   }
 
+  .control-sharp {
+    border-radius: 0 !important;
+  }
+
   .app-shell-surface {
     @apply bg-background;
   }
