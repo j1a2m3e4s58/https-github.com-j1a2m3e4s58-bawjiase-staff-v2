@@ -58,12 +58,13 @@ export default function VerifyEmailPage() {
   }
 
   return (
-    <AuthShell>
-      <div className="space-y-1 text-center mb-6">
-        <h1 className="font-display font-bold text-foreground text-2xl">
+    <AuthShell className="max-w-[450px] px-5 pb-8 pt-20">
+      <div className="mb-8 space-y-3 text-center">
+        <div className="page-kicker text-center">Account verification</div>
+        <h1 className="font-display text-3xl font-bold text-foreground">
           Verify Your Email
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="mx-auto max-w-sm text-sm leading-6 text-muted-foreground">
           {email ? (
             <>
               We sent a 6-digit code to{" "}
@@ -81,7 +82,9 @@ export default function VerifyEmailPage() {
         data-ocid="verify_email.form"
       >
         <div className="space-y-1.5">
-          <Label htmlFor="verify-code">Verification Code</Label>
+          <Label htmlFor="verify-code" className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+            Verification Code
+          </Label>
           <Input
             id="verify-code"
             type="text"
@@ -91,7 +94,7 @@ export default function VerifyEmailPage() {
             placeholder="000000"
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-            className="glass-input text-center text-2xl tracking-[0.5em] font-mono h-14"
+            className="glass-input h-14 text-center font-mono text-2xl tracking-[0.5em]"
             required
             data-ocid="verify_email.code.input"
           />
@@ -102,7 +105,7 @@ export default function VerifyEmailPage() {
 
         <Button
           type="submit"
-          className="w-full glass-button h-11 font-semibold"
+          className="h-12 w-full glass-button text-sm font-bold uppercase tracking-[0.16em]"
           disabled={isLoading || code.length < 6}
           data-ocid="verify_email.submit_button"
         >
@@ -116,7 +119,8 @@ export default function VerifyEmailPage() {
         </Button>
       </form>
 
-      <div className="mt-5 flex flex-col items-center gap-3">
+      <div className="mt-6 border-t border-border/40 pt-5">
+        <div className="flex flex-col items-center gap-3 text-center">
         <p className="text-sm text-muted-foreground">
           Didn&apos;t receive the code?{" "}
           <button
@@ -137,6 +141,7 @@ export default function VerifyEmailPage() {
           <ArrowLeft className="h-3.5 w-3.5" />
           Back to Sign In
         </Link>
+        </div>
       </div>
     </AuthShell>
   );

@@ -71,7 +71,7 @@ function TrashedCard({
 
   return (
     <div
-      className="glass-card rounded-xl p-5 flex items-start gap-4 opacity-80"
+      className="glass-card panel-sharp flex items-start gap-4 p-5 opacity-80"
       data-ocid={`trash.item.${ann.id}`}
     >
       <div className="flex-1 min-w-0">
@@ -268,11 +268,12 @@ export default function AnnouncementsTrashPage() {
 
   return (
     <AppShell>
-      <div className="max-w-3xl mx-auto space-y-6" data-ocid="trash.page">
-        {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="page-shell-compact" data-ocid="trash.page">
+        <section className="page-header">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h1 className="font-display font-bold text-2xl text-foreground flex items-center gap-2">
+            <div className="page-kicker">Archive management</div>
+            <h1 className="page-title flex items-center gap-3">
               <Trash2 className="h-6 w-6 text-destructive/70" />
               Recycle Bin
             </h1>
@@ -280,7 +281,7 @@ export default function AnnouncementsTrashPage() {
               Trashed announcements — restore or delete permanently
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="page-actions">
             <Select value={branchFilter} onValueChange={setBranchFilter}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Branch scope" />

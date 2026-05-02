@@ -73,7 +73,7 @@ function PastStaffRow({
 
   return (
     <div
-      className="flex items-center gap-4 px-4 py-3 glass-card rounded-xl hover:glass-card-elevated transition-smooth"
+      className="glass-card panel-sharp flex items-center gap-4 px-4 py-3 transition-smooth hover:glass-card-elevated"
       data-ocid={`past_staff.item.${index}`}
     >
       {/* Avatar */}
@@ -217,10 +217,10 @@ export default function PastStaffPage() {
 
   return (
     <AppShell>
-      <div className="space-y-6 max-w-4xl mx-auto" data-ocid="past_staff.page">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-display font-bold text-foreground flex items-center gap-2">
+      <div className="page-shell-narrow" data-ocid="past_staff.page">
+        <section className="page-header">
+          <div className="page-kicker">Archive management</div>
+          <h1 className="page-title flex items-center gap-3">
             <UserX className="h-6 w-6 text-muted-foreground" />
             Past Staff
           </h1>
@@ -229,8 +229,9 @@ export default function PastStaffPage() {
           </p>
         </div>
 
-        {/* Access notice */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
+        </section>
+
+        <div className="toolbar-surface text-xs text-muted-foreground">
           <ShieldOff className="h-3.5 w-3.5 flex-shrink-0" />
           <span>
             Archived staff cannot log in. Restoring grants them portal access

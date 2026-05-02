@@ -58,13 +58,14 @@ export default function ResetPasswordPage() {
 
   if (done) {
     return (
-      <AuthShell>
-        <div className="flex flex-col items-center gap-4 text-center py-4">
-          <div className="w-14 h-14 rounded-full bg-secondary/15 flex items-center justify-center">
+      <AuthShell className="max-w-[450px] px-5 pb-8 pt-20">
+        <div className="flex flex-col items-center gap-4 py-4 text-center">
+          <div className="flex h-14 w-14 items-center justify-center bg-secondary/15">
             <CheckCircle2 className="h-7 w-7 text-secondary" />
           </div>
           <div>
-            <h2 className="font-display font-bold text-foreground text-xl mb-1">
+            <div className="page-kicker text-center">Password updated</div>
+            <h2 className="mb-1 mt-3 font-display text-xl font-bold text-foreground">
               Password Reset!
             </h2>
             <p className="text-sm text-muted-foreground">
@@ -84,12 +85,13 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <AuthShell>
-      <div className="space-y-1 text-center mb-6">
-        <h1 className="font-display font-bold text-foreground text-2xl">
+    <AuthShell className="max-w-[450px] px-5 pb-8 pt-20">
+      <div className="mb-8 space-y-3 text-center">
+        <div className="page-kicker text-center">Secure credentials</div>
+        <h1 className="font-display text-3xl font-bold text-foreground">
           New Password
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="mx-auto max-w-sm text-sm leading-6 text-muted-foreground">
           Choose a strong password for your account
         </p>
       </div>
@@ -100,7 +102,9 @@ export default function ResetPasswordPage() {
         data-ocid="reset.form"
       >
         <div className="space-y-1.5">
-          <Label htmlFor="new-password">New Password</Label>
+          <Label htmlFor="new-password" className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+            New Password
+          </Label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -109,7 +113,7 @@ export default function ResetPasswordPage() {
               placeholder="At least 8 characters"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="glass-input pl-10 pr-10"
+              className="h-12 glass-input pl-10 pr-10"
               autoComplete="new-password"
               minLength={8}
               required
@@ -131,7 +135,9 @@ export default function ResetPasswordPage() {
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="confirm-password">Confirm Password</Label>
+          <Label htmlFor="confirm-password" className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+            Confirm Password
+          </Label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -140,7 +146,7 @@ export default function ResetPasswordPage() {
               placeholder="Repeat new password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="glass-input pl-10"
+              className="h-12 glass-input pl-10 pr-10"
               autoComplete="new-password"
               required
               data-ocid="reset.confirm_password.input"
@@ -158,7 +164,7 @@ export default function ResetPasswordPage() {
 
         <Button
           type="submit"
-          className="w-full glass-button h-11 font-semibold"
+          className="h-12 w-full glass-button text-sm font-bold uppercase tracking-[0.16em]"
           disabled={
             isLoading ||
             !newPassword ||
