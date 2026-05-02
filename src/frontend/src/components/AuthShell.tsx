@@ -26,7 +26,7 @@ interface AuthShellProps {
 export function AuthShell({ children, className }: AuthShellProps) {
   return (
     <div
-      className="relative min-h-screen overflow-hidden bg-background"
+      className="relative h-screen overflow-hidden bg-background"
       data-ocid="auth_shell"
     >
       <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
@@ -43,7 +43,7 @@ export function AuthShell({ children, className }: AuthShellProps) {
         <ThemeToggle />
       </div>
 
-      <div className="relative flex min-h-screen items-center justify-center px-4 py-14 sm:px-6 sm:py-16">
+      <div className="relative flex h-full items-center justify-center overflow-hidden px-4 pb-8 pt-16 sm:px-6 sm:pb-10 sm:pt-20">
         <div
           className={cn(
             "relative w-full max-w-md panel-sharp-lg glass-card-elevated overflow-visible px-6 pb-8 pt-24 shadow-glass-dark",

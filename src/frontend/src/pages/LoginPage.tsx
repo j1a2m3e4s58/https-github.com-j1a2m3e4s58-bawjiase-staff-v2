@@ -42,7 +42,7 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthShell className="max-w-[380px]">
+    <AuthShell className="flex min-h-[560px] max-w-[450px] flex-col justify-center px-4 pb-5 pt-20 sm:px-5">
       <div className="mb-10 space-y-3 text-center">
         <div className="page-kicker text-center">Secure staff access</div>
         <h1 className="font-display text-3xl font-bold text-foreground">
