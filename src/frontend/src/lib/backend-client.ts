@@ -36,18 +36,7 @@ const HR_ACCESS_CODE = (import.meta.env.VITE_HR_ACCESS_CODE || "").trim();
 const MAIL_API_URL = (
   import.meta.env.VITE_MAIL_API_URL || `${window.location.origin}/mail-api/api`
 ).replace(/\/$/, "");
-const MAIL_API_CANDIDATES = Array.from(
-  new Set(
-    [
-      MAIL_API_URL,
-      `${window.location.origin}/mail-api/api`,
-      `${window.location.origin}/api`,
-    ]
-      .map((value) => value.replace(/\/$/, ""))
-      .filter(Boolean),
-  ),
-);
-const MAIL_API_ROOT = MAIL_API_CANDIDATES[0]?.replace(/\/api$/, "") || "";
+const MAIL_API_ROOT = MAIL_API_URL.replace(/\/api$/, "");
 const ANNOUNCEMENT_DISMISS_KEY = "bcb_announcement_dismissals";
 const USERS_STORE_KEY = "bcb_mock_users";
 const AUTH_STORAGE_KEY = "bcb_auth_user";
@@ -230,50 +219,6 @@ function withCacheBuster(url: string): string {
   return `${url}${separator}_ts=${Date.now()}`;
 }
 
-function buildMailApiUrl(
-  baseUrl: string,
-  path: string,
-  token?: string | null,
-  cacheBust = false,
-): string {
-  let url = `${baseUrl}${path}`;
-  if (token) {
-    const separator = url.includes("?") ? "&" : "?";
-    url = `${url}${separator}sessionToken=${encodeURIComponent(token)}`;
-  }
-  return cacheBust ? withCacheBuster(url) : url;
-}
-
-async function fetchMailApi(
-  path: string,
-  init: RequestInit,
-  options?: {
-    cacheBust?: boolean;
-    sessionTokenOverride?: string | null;
-  },
-): Promise<Response> {
-  const token =
-    options && "sessionTokenOverride" in options
-      ? options.sessionTokenOverride
-      : getStoredSessionToken();
-  let lastError: unknown;
-
-  for (const baseUrl of MAIL_API_CANDIDATES) {
-    try {
-      return await fetch(
-        buildMailApiUrl(baseUrl, path, token, options?.cacheBust ?? false),
-        init,
-      );
-    } catch (error) {
-      lastError = error;
-    }
-  }
-
-  throw lastError instanceof Error
-    ? lastError
-    : new Error("Unable to reach the staff portal service");
-}
-
 function handleSessionExpired() {
   if (typeof window === "undefined") return;
   try {
@@ -287,7 +232,7 @@ function handleSessionExpired() {
 async function postMailApi(path: string, payload: Record<string, unknown>) {
   const response = await withRequestActivity(path, async () => {
     const token = getStoredSessionToken();
-    return fetchMailApi(path, {
+    return fetch(withSessionToken(`${MAIL_API_URL}${path}`), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -314,7 +259,7 @@ async function postMailApiJson(
 ): Promise<Record<string, unknown>> {
   const response = await withRequestActivity(path, async () => {
     const token = getStoredSessionToken();
-    return fetchMailApi(path, {
+    return fetch(withSessionToken(`${MAIL_API_URL}${path}`), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -339,14 +284,10 @@ async function postMailApiJson(
 async function getMailApiJson(path: string): Promise<Record<string, unknown>> {
   const response = await withRequestActivity(path, async () => {
     const token = getStoredSessionToken();
-    return fetchMailApi(
-      path,
-      {
+    return fetch(withCacheBuster(withSessionToken(`${MAIL_API_URL}${path}`)), {
       method: "GET",
       cache: "no-store",
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      },
-      { cacheBust: true },
     );
   });
   const data = (await response.json().catch(() => ({}))) as Record<string, unknown> & {
@@ -370,7 +311,7 @@ async function uploadMailApiFile(
   formData.append("file", file);
   const response = await withRequestActivity(path, async () => {
     const token = getStoredSessionToken();
-    return fetchMailApi(path, {
+    return fetch(withSessionToken(`${MAIL_API_URL}${path}`), {
       method: "POST",
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       body: formData,
@@ -669,9 +610,10 @@ async function postOptionalApi(
   const timeoutId = window.setTimeout(() => controller.abort(), OPTIONAL_API_TIMEOUT_MS);
   const token = sessionTokenOverride ?? getStoredSessionToken();
   try {
-    const response = await fetchMailApi(
-      path,
-      {
+    const url = token
+      ? `${MAIL_API_URL}${path}?sessionToken=${encodeURIComponent(token)}`
+      : `${MAIL_API_URL}${path}`;
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -679,8 +621,6 @@ async function postOptionalApi(
       },
       body: JSON.stringify(payload),
       signal: controller.signal,
-      },
-      { sessionTokenOverride: token },
     );
     if (!response.ok) return null;
     return (await response.json().catch(() => ({}))) as Record<string, unknown>;
@@ -699,14 +639,13 @@ async function getOptionalApi(
   const timeoutId = window.setTimeout(() => controller.abort(), OPTIONAL_API_TIMEOUT_MS);
   const token = sessionTokenOverride ?? getStoredSessionToken();
   try {
-    const response = await fetchMailApi(
-      path,
-      {
+    const url = token
+      ? `${MAIL_API_URL}${path}?sessionToken=${encodeURIComponent(token)}`
+      : `${MAIL_API_URL}${path}`;
+    const response = await fetch(url, {
       method: "GET",
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       signal: controller.signal,
-      },
-      { sessionTokenOverride: token },
     );
     if (!response.ok) return null;
     return (await response.json().catch(() => ({}))) as Record<string, unknown>;
@@ -723,30 +662,24 @@ async function postKeepaliveApi(
   sessionTokenOverride?: string | null,
 ): Promise<void> {
   const token = sessionTokenOverride ?? getStoredSessionToken();
+  const url = token
+    ? `${MAIL_API_URL}${path}?sessionToken=${encodeURIComponent(token)}`
+    : `${MAIL_API_URL}${path}`;
   try {
     if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
       const body = new Blob([JSON.stringify(payload)], {
         type: "application/json",
       });
-      for (const baseUrl of MAIL_API_CANDIDATES) {
-        const sent = navigator.sendBeacon(
-          buildMailApiUrl(baseUrl, path, token),
-          body,
-        );
-        if (sent) return;
-      }
+      const sent = navigator.sendBeacon(url, body);
+      if (sent) return;
     }
-    await fetchMailApi(
-      path,
-      {
+    await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
       keepalive: true,
-      },
-      { sessionTokenOverride: token },
     );
   } catch {
     // Ignore keepalive failures so logout can still continue locally.
@@ -4173,14 +4106,10 @@ export async function apiDeleteAuditLogs(
 export async function apiDownloadProductionBackup(): Promise<ApiResult<string>> {
   try {
     const token = getStoredSessionToken();
-    const response = await fetchMailApi(
-      "/backup/export",
-      {
-        method: "GET",
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      },
-      { sessionTokenOverride: token },
-    );
+    const response = await fetch(`${MAIL_API_URL}/backup/export`, {
+      method: "GET",
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
     if (!response.ok) {
       if (response.status === 401) {
         handleSessionExpired();
