@@ -337,14 +337,16 @@ export default function SupervisorManagementPage() {
           </div>
         }
       >
-        <div className="mx-auto max-w-7xl space-y-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="page-shell">
+          <section className="page-header">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
+              <div className="page-kicker">Access and delegation</div>
               <h1 className="flex items-center gap-2 font-display text-2xl font-bold text-foreground">
                 <ShieldCheck className="h-6 w-6 text-primary" />
                 Supervisor Management
               </h1>
-              <p className="mt-0.5 text-sm text-muted-foreground">
+              <p className="page-subtitle mt-2">
                 Assign branch, department, and module access for supervisors.
               </p>
             </div>
@@ -358,14 +360,15 @@ export default function SupervisorManagementPage() {
               Back to Directory
             </Button>
           </div>
+          </section>
 
           {loading ? (
-            <div className="rounded-2xl border border-border/50 bg-card/60 p-8 text-sm text-muted-foreground">
+            <div className="surface-muted p-8 text-sm text-muted-foreground">
               Loading staff...
             </div>
           ) : (
             <div className="grid gap-6 lg:grid-cols-[320px,1fr]">
-              <div className="space-y-4 rounded-2xl border border-border/50 bg-card/60 p-4">
+              <div className="glass-card panel-sharp space-y-4 p-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -382,7 +385,7 @@ export default function SupervisorManagementPage() {
                         key={member.id}
                         type="button"
                         onClick={() => setSelectedId(member.id)}
-                        className={`w-full rounded-xl border px-3 py-3 text-left transition-smooth ${
+                        className={`panel-sharp w-full border px-3 py-3 text-left transition-smooth ${
                           member.id === selectedId
                             ? "border-primary bg-primary/8"
                             : "border-border/50 bg-background/40 hover:border-primary/30"

@@ -43,11 +43,14 @@ export default function LoginPage() {
 
   return (
     <AuthShell className="max-w-[380px]">
-      <div className="mb-10 space-y-1 text-center">
-        <h1 className="font-display font-bold text-2xl text-foreground">
+      <div className="mb-10 space-y-3 text-center">
+        <div className="page-kicker text-center">Secure staff access</div>
+        <h1 className="font-display text-3xl font-bold text-foreground">
           Staff Portal
         </h1>
-        <p className="text-sm text-muted-foreground">Secure Access</p>
+        <p className="mx-auto max-w-xs text-sm leading-6 text-muted-foreground">
+          Sign in to manage communication, people records, and internal operations.
+        </p>
       </div>
 
       <form
@@ -68,7 +71,7 @@ export default function LoginPage() {
             placeholder="you@bawjiasearearuralbank.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="h-12 rounded-xl glass-input text-base"
+            className="h-12 glass-input text-base"
             autoComplete="email"
             required
             data-ocid="login.email.input"
@@ -89,7 +92,7 @@ export default function LoginPage() {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="h-12 rounded-xl glass-input pr-12 text-base"
+              className="h-12 glass-input pr-12 text-base"
               autoComplete="current-password"
               required
               data-ocid="login.password.input"
@@ -136,7 +139,7 @@ export default function LoginPage() {
 
         <Button
           type="submit"
-          className="h-12 w-full rounded-xl glass-button text-sm font-bold uppercase tracking-wide"
+          className="h-12 w-full glass-button text-sm font-bold uppercase tracking-[0.18em]"
           disabled={isLoading || !email || !password}
           data-ocid="login.submit_button"
         >
@@ -151,7 +154,7 @@ export default function LoginPage() {
         </Button>
       </form>
 
-      <div className="mt-3 border-border border-t pt-5 text-center">
+      <div className="mt-4 border-t border-border/40 pt-5 text-center">
         <p className="text-sm text-muted-foreground">
           New Staff?{" "}
           <Link

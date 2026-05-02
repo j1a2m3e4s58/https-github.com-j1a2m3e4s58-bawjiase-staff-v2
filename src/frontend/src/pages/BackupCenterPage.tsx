@@ -1,14 +1,8 @@
 import { AppShell } from "@/components/AppShell";
 import { LiveSyncBadge } from "@/components/LiveSyncBadge";
+import { PortalCard } from "@/components/PortalCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { apiDownloadProductionBackup } from "@/lib/backend-client";
 import { useAuth } from "@/store/auth";
 import { AlertTriangle, Database, Download, ShieldCheck } from "lucide-react";
@@ -89,22 +83,26 @@ export default function BackupCenterPage() {
 
   return (
     <AppShell>
-      <div className="container-page py-8 space-y-6 animate-fade-in">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
+      <div className="page-shell-narrow py-2">
+        <section className="page-header">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div>
             <Badge variant="outline" className="mb-3 gap-1.5">
               <ShieldCheck className="h-3.5 w-3.5" />
               IT/HR protected
             </Badge>
-            <h1 className="font-display text-3xl font-bold text-foreground">
+            <div className="page-kicker">Protected operations</div>
+            <h1 className="page-title">
               Backup Center
             </h1>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+            <p className="page-subtitle">
               Download one production JSON backup before migration, major
               deployments, or client handover.
             </p>
           </div>
-          <Button
+          <div className="page-actions">
+            <LiveSyncBadge eventNames={[]} />
+            <Button
             type="button"
             onClick={handleDownload}
             disabled={!canBackup || downloading}
@@ -114,61 +112,62 @@ export default function BackupCenterPage() {
             <Download className="h-4 w-4" />
             {downloading ? "Preparing backup..." : "Download Backup"}
           </Button>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <LiveSyncBadge eventNames={[]} />
+        </section>
+        <div className="toolbar-surface">
           <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-xs text-muted-foreground">
             <span className="font-semibold text-foreground">Last backup:</span>{" "}
             {lastBackupLabel}
           </div>
         </div>
 
-        <Card className="glass-card-elevated">
-          <CardHeader>
-            <CardTitle className="font-display flex items-center gap-2">
+        <PortalCard elevated>
+            <div className="mb-4">
+            <h2 className="section-title">
               <Database className="h-5 w-5 text-primary" />
               What This Backup Includes
-            </CardTitle>
-            <CardDescription>
+            </h2>
+            <p className="section-copy">
               The file is meant for IT/HR only and should be stored securely.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
+            </p>
+          </div>
+          <div className="space-y-3">
             {BACKUP_INCLUDED_ITEMS.map((item) => (
               <div
                 key={item}
-                className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm"
+                className="surface-muted px-4 py-3 text-sm"
               >
                 {item}
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </PortalCard>
 
-        <Card className="glass-card">
-          <CardHeader>
-            <CardTitle className="font-display text-xl">
+        <PortalCard>
+            <div className="mb-4">
+            <h2 className="section-title">
               Recommended backup routine
-            </CardTitle>
-            <CardDescription>
+            </h2>
+            <p className="section-copy">
               These steps help you avoid panic before client handover, cPanel
               work, or major content updates.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
+            </p>
+          </div>
+          <div className="space-y-3">
             {BACKUP_SAFETY_STEPS.map((step) => (
               <div
                 key={step}
-                className="rounded-xl border border-border/60 bg-background/40 px-4 py-3 text-sm text-muted-foreground"
+                className="surface-muted px-4 py-3 text-sm text-muted-foreground"
               >
                 {step}
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </PortalCard>
 
-        <Card className="border-amber-500/30 bg-amber-500/10">
-          <CardContent className="flex gap-3 pt-6 text-sm text-amber-900 dark:text-amber-200">
+        <div className="panel-sharp border border-amber-500/30 bg-amber-500/10 px-6 py-6 text-sm text-amber-900 dark:text-amber-200">
+          <div className="flex gap-3">
             <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0" />
             <div>
               <p className="font-semibold">Security warning</p>
@@ -178,8 +177,8 @@ export default function BackupCenterPage() {
                 shared computer.
               </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </AppShell>
   );

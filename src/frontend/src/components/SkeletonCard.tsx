@@ -16,7 +16,7 @@ export function SkeletonCard({
 }: SkeletonCardProps) {
   return (
     <div
-      className={cn("glass-card rounded-xl p-5 space-y-3", className)}
+      className={cn("glass-card panel-sharp rounded-xl space-y-3 p-5", className)}
       data-ocid="skeleton.card"
     >
       {hasImage && <Skeleton className="h-40 w-full rounded-lg" />}

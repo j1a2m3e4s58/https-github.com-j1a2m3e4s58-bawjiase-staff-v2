@@ -130,7 +130,7 @@ function OnlineSummary({ staff }: { staff: User[] }) {
 
   return (
     <div
-      className="flex flex-wrap items-center gap-2 glass-card rounded-xl px-4 py-3 text-sm"
+      className="toolbar-surface text-sm"
       data-ocid="directory.online_summary"
     >
       <span className="flex items-center gap-1.5 font-semibold text-foreground">
@@ -140,7 +140,7 @@ function OnlineSummary({ staff }: { staff: User[] }) {
       {BRANCHES.map((branch) => (
         <span
           key={branch}
-          className="inline-flex items-center gap-1 rounded-full border border-border/60 px-2 py-1 text-xs text-muted-foreground"
+          className="inline-flex items-center gap-1 border border-border/60 px-2 py-1 text-xs text-muted-foreground"
         >
           <span className="font-medium">{branch}</span>
           <Badge
@@ -181,7 +181,7 @@ function StaffCard({
 
   return (
     <div
-      className="glass-card rounded-xl p-4 flex flex-col gap-3 hover:glass-card-elevated transition-smooth cursor-default group"
+      className="glass-card panel-sharp p-4 flex flex-col gap-3 hover:-translate-y-0.5 hover:glass-card-elevated transition-smooth cursor-default group"
       data-ocid={`directory.staff_card.item.${index}`}
     >
       <div className="flex items-start gap-3">
@@ -248,7 +248,7 @@ function StaffCard({
         </span>
       </div>
 
-      <div className="space-y-1.5 text-xs text-muted-foreground border-t border-border/30 pt-3">
+      <div className="space-y-1.5 border-t border-border/30 pt-3 text-xs text-muted-foreground">
         <a
           href={`mailto:${staff.email}`}
           className="flex items-center gap-2 hover:text-primary transition-colors"
@@ -607,45 +607,51 @@ export default function DirectoryPage() {
 
   return (
     <AppShell>
-      <div className="space-y-6 max-w-7xl mx-auto" data-ocid="directory.page">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-display font-bold text-foreground flex items-center gap-2">
-              <Users className="h-6 w-6 text-primary" />
-              Staff Directory
-            </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
+      <div className="page-shell" data-ocid="directory.page">
+        <section className="page-header">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="page-kicker">People and presence</div>
+              <h1 className="page-title flex items-center gap-3">
+                <Users className="h-7 w-7 text-primary" />
+                Staff Directory
+              </h1>
+              <p className="page-subtitle">
+                Search active staff, check branch presence, and keep people records organized.
+              </p>
+              <p className="mt-3 text-sm font-medium text-foreground/80">
               {staff.length} active staff member{staff.length !== 1 ? "s" : ""}
-            </p>
-          </div>
-          {canEdit && (
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="gap-2"
-                onClick={() => navigate({ to: "/directory/supervisors" })}
-                data-ocid="directory.supervisor_button"
-              >
-                <ShieldCheck className="h-4 w-4" />
-                Supervisors
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="gap-2"
-                onClick={() => navigate({ to: "/directory/past-staff" })}
-                data-ocid="directory.past_staff_button"
-              >
-                <UserX className="h-4 w-4" />
-                Past Staff
-              </Button>
+              </p>
             </div>
-          )}
-        </div>
-        <div className="flex justify-end">
-          <LiveSyncBadge />
-        </div>
+            <div className="page-actions">
+              {canEdit && (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => navigate({ to: "/directory/supervisors" })}
+                    data-ocid="directory.supervisor_button"
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    Supervisors
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => navigate({ to: "/directory/past-staff" })}
+                    data-ocid="directory.past_staff_button"
+                  >
+                    <UserX className="h-4 w-4" />
+                    Past Staff
+                  </Button>
+                </>
+              )}
+              <LiveSyncBadge />
+            </div>
+          </div>
+        </section>
         {loadError ? (
           <RetryPanel
             title="Directory sync needs a retry"
@@ -670,31 +676,30 @@ export default function DirectoryPage() {
           <>
             {presenceAdjustedStaff.length > 0 && <OnlineSummary staff={presenceAdjustedStaff} />}
 
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search staff directory..."
-                className="pl-9"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                data-ocid="directory.search_input"
-              />
+            <div className="toolbar-surface">
+              <div className="relative w-full max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search staff directory..."
+                  className="pl-9"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  data-ocid="directory.search_input"
+                />
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Browse by name, department, branch, phone, or email.
+              </div>
             </div>
 
             {grouped.length === 0 ? (
-              <div
-                className="text-center py-16 glass-card rounded-xl"
+              <EmptyState
+                icon={<Users className="h-10 w-10" />}
+                title="No staff match your search"
+                description="Try a different name, branch, department, email, or phone number."
+                className="glass-card min-h-[260px]"
                 data-ocid="directory.empty_state"
-              >
-                <Users className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-                <p className="text-foreground font-medium">
-                  No staff match your search
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Try a different name, branch, department, email, or phone
-                  number.
-                </p>
-              </div>
+              />
             ) : (
               <div className="space-y-8">
                 {grouped.map(([department, members]) => (
@@ -702,9 +707,9 @@ export default function DirectoryPage() {
                     key={department}
                     data-ocid={`directory.dept_section.${department.toLowerCase().replace(/\s+/g, "_")}`}
                   >
-                    <div className="flex items-center gap-3 mb-4">
+                    <div className="mb-4 flex items-center gap-3">
                       <div className="flex items-center gap-2">
-                        <span className="font-display font-semibold text-foreground text-sm uppercase tracking-wider">
+                        <span className="font-display text-sm font-semibold uppercase tracking-wider text-foreground">
                           {department}
                         </span>
                         <Badge

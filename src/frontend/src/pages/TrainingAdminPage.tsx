@@ -83,7 +83,7 @@ function StatCard({
   return (
     <PortalCard className="h-full">
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <div className="flex h-10 w-10 items-center justify-center border border-primary/20 bg-primary/10 text-primary">
           {icon}
         </div>
         <div>
@@ -259,31 +259,34 @@ export default function TrainingAdminPage() {
           </div>
         }
       >
-        <div className="space-y-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="page-shell">
+          <section className="page-header">
+            <div className="page-kicker">Training analytics</div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="-ml-1 mb-4 gap-1.5"
+              onClick={() => navigate({ to: "/training" })}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Training portal
+            </Button>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="-ml-1 mb-2 gap-1.5"
-                onClick={() => navigate({ to: "/training" })}
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Training portal
-              </Button>
               <div className="flex items-center gap-2">
                 <LayoutGrid className="h-5 w-5 text-primary" />
                 <h1 className="font-display text-2xl font-bold text-foreground">
                   Training Dashboard
                 </h1>
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="page-subtitle mt-2">
                 Completion summaries for training videos and document
                 acknowledgements.
               </p>
             </div>
           </div>
+          </section>
 
           {loading ? (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -332,7 +335,7 @@ export default function TrainingAdminPage() {
               </div>
 
               <Tabs defaultValue={canManageVideoModule ? "videos" : "documents"}>
-                <div className="mb-4 grid gap-3 md:grid-cols-2">
+                <div className="toolbar-surface mb-4">
                   <div className="space-y-1.5">
                     <div className="text-sm font-medium text-foreground">Branch filter</div>
                     <Select value={branchFilter} onValueChange={setBranchFilter}>

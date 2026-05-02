@@ -46,10 +46,11 @@ export function AuthShell({ children, className }: AuthShellProps) {
       <div className="relative flex h-full items-center justify-center px-4 py-8">
         <div
           className={cn(
-            "relative mt-12 w-full max-w-md panel-sharp-lg rounded-2xl glass-card-elevated px-6 pb-6 pt-20 shadow-glass-dark",
+            "relative mt-12 w-full max-w-md panel-sharp-lg glass-card-elevated overflow-hidden px-6 pb-7 pt-20 shadow-glass-dark",
             className,
           )}
         >
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
           <div className="absolute -top-12 left-1/2 -translate-x-1/2">
             <BCBLogoBadge />
           </div>

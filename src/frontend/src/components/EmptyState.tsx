@@ -24,25 +24,25 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center py-16 px-6 text-center",
+        "surface-muted flex flex-col items-center justify-center px-6 py-16 text-center",
         className,
       )}
       data-ocid={ocid}
     >
       {icon && (
-        <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4 text-muted-foreground">
+        <div className="mb-5 flex h-16 w-16 items-center justify-center border border-border/40 bg-primary/8 text-primary shadow-sm">
           {icon}
         </div>
       )}
-      <h3 className="font-display font-semibold text-foreground text-lg mb-1.5">
+      <h3 className="mb-2 font-display text-xl font-semibold text-foreground">
         {title}
       </h3>
       {description && (
-        <p className="text-sm text-muted-foreground max-w-xs">{description}</p>
+        <p className="max-w-sm text-sm leading-6 text-muted-foreground">{description}</p>
       )}
       {actionLabel && onAction && (
         <Button
-          className="mt-5"
+          className="mt-6 min-w-40"
           onClick={onAction}
           data-ocid="empty_state.primary_button"
         >

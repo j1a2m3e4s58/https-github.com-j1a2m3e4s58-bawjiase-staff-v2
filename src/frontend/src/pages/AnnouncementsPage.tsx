@@ -186,7 +186,7 @@ function AnnouncementAttachment({ ann }: { ann: AnnouncementWithPoll }) {
   const linkLabel = ann.allowDownload ? "Download File" : "View File";
 
   return (
-    <div className="mt-4 space-y-3 rounded-xl border border-border/30 bg-background/40 p-4">
+    <div className="surface-muted mt-4 space-y-3 p-4">
       {resolvedImageUrl && (
         <div className="overflow-hidden rounded-xl border border-border/30 bg-muted/30">
           <img
@@ -198,7 +198,7 @@ function AnnouncementAttachment({ ann }: { ann: AnnouncementWithPoll }) {
       )}
 
       {resolvedFileUrl && (
-        <div className="flex items-center justify-between gap-3 flex-wrap rounded-xl border border-border/30 bg-card/70 px-4 py-3">
+        <div className="surface-muted flex items-center justify-between gap-3 flex-wrap px-4 py-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
               <FileText className="h-5 w-5" />
@@ -263,7 +263,7 @@ function AnnouncementCard({
 
   return (
     <div
-              className="glass-card panel-sharp rounded-xl p-5 group relative"
+              className="glass-card panel-sharp group relative p-5"
       data-ocid={`announcements.item.${ann.id}`}
     >
       <div className="flex items-start gap-2 mb-2">
@@ -294,7 +294,7 @@ function AnnouncementCard({
       {ann.poll && <PollWidget poll={ann.poll} announcementId={ann.id} />}
 
       {/* Actions */}
-      <div className="flex items-center gap-2 mt-4 pt-3 border-t border-border/20">
+      <div className="mt-4 flex items-center gap-2 border-t border-border/20 pt-3">
         <button
           type="button"
           onClick={() => onDismiss(ann.id)}
@@ -918,21 +918,17 @@ export default function AnnouncementsPage() {
 
   return (
     <AppShell>
-      <div
-        className="max-w-5xl mx-auto space-y-6"
-        data-ocid="announcements.page"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h1 className="font-display font-bold text-2xl text-foreground">
-              Announcements
-            </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Bank-wide news, policies and updates
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
+      <div className="page-shell-narrow" data-ocid="announcements.page">
+        <section className="page-header">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="page-kicker">Internal communication</div>
+              <h1 className="page-title">Announcements</h1>
+              <p className="page-subtitle">
+                Bank-wide news, policies, attachments, and time-sensitive updates in one place.
+              </p>
+            </div>
+            <div className="page-actions">
             <RoleGuard roles={["SuperAdmin", "HRAdmin", "Supervisor"]} permission="announcements">
               <Button
                 asChild
@@ -956,15 +952,12 @@ export default function AnnouncementsPage() {
                 </Link>
               </Button>
             </RoleGuard>
+            </div>
           </div>
-        </div>
+        </section>
 
-        {/* Filter bar */}
-        <div
-          className="flex items-center gap-3 flex-wrap"
-          data-ocid="announcements.filter.section"
-        >
-          <div className="relative flex-1 min-w-[200px]">
+        <div className="toolbar-surface" data-ocid="announcements.filter.section">
+          <div className="relative min-w-[220px] flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search announcements..."
@@ -973,7 +966,8 @@ export default function AnnouncementsPage() {
               className="pl-9"
               data-ocid="announcements.search.search_input"
             />
-            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
           <Select value={branchFilter} onValueChange={setBranchFilter}>
             <SelectTrigger
               className="w-44"
@@ -1020,6 +1014,7 @@ export default function AnnouncementsPage() {
               <SelectItem value="IT">IT</SelectItem>
             </SelectContent>
           </Select>
+          </div>
         </div>
 
         {/* Content */}

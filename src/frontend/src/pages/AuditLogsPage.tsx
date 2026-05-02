@@ -207,7 +207,7 @@ function LogRow({
 }) {
   return (
     <div
-      className={`flex items-start gap-3 px-4 py-3 border-b border-border/30 hover:bg-muted/20 transition-colors group ${
+      className={`flex items-start gap-3 border-b border-border/30 px-4 py-3 transition-colors group hover:bg-muted/20 ${
         selected ? "bg-primary/5" : ""
       }`}
       data-ocid={`audit.row.${index}`}
@@ -384,22 +384,28 @@ export default function AuditLogsPage() {
 
   return (
     <AppShell>
-      <div className="max-w-5xl mx-auto space-y-5" data-ocid="audit.page">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
+      <div className="page-shell-narrow" data-ocid="audit.page">
+        <section className="page-header">
+          <div className="page-kicker">Security and oversight</div>
+          <div className="mt-3 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center border border-primary/20 bg-primary/15">
             <Shield className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-xl font-display font-bold text-foreground">
+            <h1 className="font-display text-2xl font-bold text-foreground">
               IT Security Center
             </h1>
             <p className="text-sm text-muted-foreground">
               System security audit logs from the most recent 150 entries.
             </p>
           </div>
-        </div>
+          </div>
+          <p className="page-subtitle mt-4">
+            Search activity, export filtered entries, and clean up resolved log history when needed.
+          </p>
+        </section>
 
-        <div className="glass-card rounded-xl p-3 flex flex-wrap items-center gap-3">
+        <div className="toolbar-surface">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
@@ -524,7 +530,7 @@ export default function AuditLogsPage() {
                     </span>
                   </div>
 
-                  <div className="glass-card rounded-xl overflow-hidden">
+                  <div className="glass-card panel-sharp overflow-hidden">
                     {groupLogs.map((log, i) => (
                       <LogRow
                         key={log.id}

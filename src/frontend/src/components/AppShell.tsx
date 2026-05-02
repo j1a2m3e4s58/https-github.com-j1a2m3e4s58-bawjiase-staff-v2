@@ -341,7 +341,7 @@ function MobileBottomNav() {
           >
             <span
               className={cn(
-                "p-1 rounded-lg transition-smooth",
+                "panel-sharp p-1 transition-smooth",
                 isActive && "bg-primary/10",
               )}
             >
@@ -388,7 +388,7 @@ function MobileDrawer({
       <div className="absolute inset-0 bg-foreground/30 backdrop-blur-sm" />
       <div
         ref={drawerRef}
-        className="relative w-72 glass-card-elevated h-full flex flex-col animate-slide-up"
+        className="relative flex h-full w-72 flex-col glass-card-elevated animate-slide-up"
         data-ocid="appshell.mobile_drawer"
       >
         <div className="flex items-center justify-between p-4 border-b border-border/30">
@@ -422,7 +422,7 @@ function MobileDrawer({
                 to={item.to}
                 onClick={onClose}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-smooth",
+                  "panel-sharp flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-smooth",
                   isActive
                     ? "bg-primary/15 text-primary"
                     : "text-foreground/70 hover:bg-muted/60 hover:text-foreground",
@@ -471,7 +471,7 @@ function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
 
   return (
     <header
-      className="sticky top-0 z-40 glass-card border-b border-border/30 flex items-center justify-between px-4 h-14"
+      className="sticky top-0 z-40 glass-card border-b border-border/30 flex h-14 items-center justify-between px-4"
       data-ocid="appshell.topbar"
     >
       <div className="flex items-center gap-3">
@@ -498,7 +498,7 @@ function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="flex items-center gap-2 pl-2 rounded-lg hover:bg-muted/60 transition-smooth"
+              className="panel-sharp flex items-center gap-2 pl-2 transition-smooth hover:bg-muted/60"
               data-ocid="appshell.topbar.user_menu.button"
             >
                 <Avatar className="h-7 w-7">
@@ -591,7 +591,7 @@ function DesktopTopNav() {
   const visibleItems = topNavItems.filter((item) => canSeeNavItem(user, item));
 
   return (
-    <header className="sticky top-4 z-40 mx-4 mt-4 panel-sharp-lg glass-card-elevated rounded-2xl border border-border/40 px-4 py-3">
+    <header className="sticky top-4 z-40 mx-4 mt-4 panel-sharp-lg glass-card-elevated overflow-hidden border border-border/40 px-4 py-3">
       <div className="flex items-center gap-3">
         <Link to="/" className="flex items-center gap-3 w-[220px] shrink-0">
           <BCBBadge size="md" />
@@ -616,7 +616,7 @@ function DesktopTopNav() {
                 key={`${item.to}-${item.label}`}
                 to={item.to}
                 className={cn(
-                  "inline-flex items-center justify-center gap-2 min-h-11 px-2 xl:px-3 rounded-lg text-[12px] xl:text-sm font-semibold whitespace-nowrap transition-smooth",
+                  "panel-sharp inline-flex min-h-11 items-center justify-center gap-2 px-2 text-[12px] font-semibold whitespace-nowrap transition-smooth xl:px-3 xl:text-sm",
                   isActive
                     ? "bg-primary/15 text-primary"
                     : "text-foreground/70 hover:bg-muted/60 hover:text-foreground",
@@ -638,7 +638,7 @@ function DesktopTopNav() {
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="flex items-center gap-2 rounded-full border border-border/40 bg-muted/30 py-1.5 pl-1.5 pr-3 hover:bg-muted/60 transition-smooth"
+                className="panel-sharp flex items-center gap-2 border border-border/40 bg-muted/30 py-1.5 pl-1.5 pr-3 transition-smooth hover:bg-muted/60"
                 data-ocid="appshell.desktop_user_menu.button"
               >
                   <Avatar className="h-9 w-9">
@@ -702,10 +702,7 @@ export function AppShell({ children }: AppShellProps) {
         {isMobile && <TopBar onMenuClick={() => setDrawerOpen(true)} />}
         {!isMobile && <DesktopTopNav />}
         <main
-          className={cn(
-            "flex-1 overflow-y-auto p-4 md:p-6",
-            isMobile && "pb-20",
-          )}
+          className={cn("flex-1 overflow-y-auto p-4 md:p-6 lg:p-7", isMobile && "pb-20")}
           data-ocid="appshell.main_content"
         >
           {children}

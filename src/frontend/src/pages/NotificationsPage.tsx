@@ -134,7 +134,7 @@ function NotifItem({
       ) : null}
 
       <div
-        className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center mt-0.5 ${kindColor(notif.kind)}`}
+        className={`mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center border border-border/20 ${kindColor(notif.kind)}`}
       >
         {kindIcon(notif.kind)}
       </div>
@@ -253,30 +253,29 @@ export default function NotificationsPage() {
 
   return (
     <AppShell>
-      <div
-        className="max-w-2xl mx-auto space-y-5"
-        data-ocid="notifications.page"
-      >
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="font-display text-2xl font-bold text-foreground">
+      <div className="page-shell-compact" data-ocid="notifications.page">
+        <section className="page-header">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+            <div className="page-kicker">Inbox and alerts</div>
+            <h1 className="page-title">
               Notifications
             </h1>
             {unreadCount > 0 ? (
-              <p className="text-sm text-muted-foreground mt-0.5">
+              <p className="page-subtitle">
                 <span className="font-semibold text-primary">
                   {unreadCount}
                 </span>{" "}
                 unread
               </p>
             ) : (
-              <p className="text-sm text-muted-foreground mt-0.5">
+              <p className="page-subtitle">
                 All caught up
               </p>
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="page-actions">
             {notifications.length > 0 ? (
               <Button
                 type="button"
@@ -333,10 +332,11 @@ export default function NotificationsPage() {
             ) : null}
           </div>
         </div>
+        </section>
 
         {isLoading ? (
           <div
-            className="glass-card rounded-xl divide-y divide-border/30"
+            className="glass-card panel-sharp divide-y divide-border/30"
             data-ocid="notifications.loading_state"
           >
             {[1, 2, 3, 4, 5].map((i) => (
@@ -357,7 +357,7 @@ export default function NotificationsPage() {
                 <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
                   {label}
                 </h2>
-                <div className="glass-card rounded-xl overflow-hidden divide-y divide-border/20">
+                <div className="glass-card panel-sharp overflow-hidden divide-y divide-border/20">
                   {items.map((notif, i) => (
                     <NotifItem
                       key={notif.id}

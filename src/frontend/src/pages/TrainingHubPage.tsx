@@ -319,10 +319,21 @@ export default function TrainingHubPage() {
 
   return (
     <AppShell>
-      <div className="space-y-6">
-        <div className="flex justify-end">
-          <LiveSyncBadge eventNames={[]} />
-        </div>
+      <div className="page-shell">
+        <section className="page-header">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="page-kicker">Learning and handbook</div>
+              <h1 className="page-title">Training Portal</h1>
+              <p className="page-subtitle">
+                Access role-relevant videos and documents, then keep progress visible for every staff member.
+              </p>
+            </div>
+            <div className="page-actions">
+              <LiveSyncBadge eventNames={[]} />
+            </div>
+          </div>
+        </section>
         <PortalCard
           className="overflow-hidden"
           action={
@@ -369,10 +380,10 @@ export default function TrainingHubPage() {
         >
           <div className="grid gap-5 lg:grid-cols-[1.35fr_.95fr]">
             <div className="space-y-3">
-              <div className="flex items-center gap-2">
+              <div className="section-title">
                 <GraduationCap className="h-6 w-6 text-primary" />
                 <h1 className="font-display text-2xl font-bold text-foreground">
-                  Training And Documents Portal
+                  Training and Documents Portal
                 </h1>
               </div>
               <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
@@ -395,7 +406,7 @@ export default function TrainingHubPage() {
 
             <PortalCard className="p-4">
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                <div className="rounded-lg border border-border/40 bg-background/40 p-3">
+                <div className="surface-muted p-3">
                   <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Training progress
                   </div>

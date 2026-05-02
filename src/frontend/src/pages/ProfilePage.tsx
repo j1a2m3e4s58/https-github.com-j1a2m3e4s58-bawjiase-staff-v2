@@ -134,10 +134,10 @@ function roleBadgeVariant(role: Role): "default" | "secondary" | "outline" {
 
 function ProfileSkeleton() {
   return (
-    <div className="max-w-2xl mx-auto space-y-6 pb-8">
-      <div className="h-44 rounded-2xl bg-card/70 animate-pulse" />
-      <div className="h-96 rounded-2xl bg-card/70 animate-pulse" />
-      <div className="h-40 rounded-2xl bg-card/70 animate-pulse" />
+    <div className="page-shell-compact pb-8">
+      <div className="h-44 panel-sharp bg-card/70 animate-pulse" />
+      <div className="h-96 panel-sharp bg-card/70 animate-pulse" />
+      <div className="h-40 panel-sharp bg-card/70 animate-pulse" />
     </div>
   );
 }
@@ -382,7 +382,14 @@ export default function ProfilePage() {
 
   return (
     <AppShell>
-      <div className="max-w-2xl mx-auto space-y-6 pb-8" data-ocid="profile.page">
+      <div className="page-shell-compact pb-8" data-ocid="profile.page">
+        <section className="page-header">
+          <div className="page-kicker">Personal workspace</div>
+          <h1 className="page-title text-foreground">My Profile</h1>
+          <p className="page-subtitle">
+            Review your identity details, keep your contact information current, and manage your account presence.
+          </p>
+        </section>
         <PortalCard elevated data-ocid="profile.header.card">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
             <div className="relative flex-shrink-0">

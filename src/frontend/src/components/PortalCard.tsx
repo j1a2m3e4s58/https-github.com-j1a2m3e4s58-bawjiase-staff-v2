@@ -30,15 +30,15 @@ export function PortalCard({
       data-ocid={ocid}
     >
       {(title || action) && (
-        <div className="flex items-start justify-between mb-4">
-          <div>
+        <div className="mb-5 flex items-start justify-between gap-4 border-b border-border/30 pb-4">
+          <div className="min-w-0">
             {title && (
-              <h3 className="font-display font-semibold text-foreground text-base leading-tight">
+              <h3 className="font-display text-lg font-semibold leading-tight text-foreground">
                 {title}
               </h3>
             )}
             {subtitle && (
-              <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
             )}
           </div>
           {action && <div className="ml-3 flex-shrink-0">{action}</div>}

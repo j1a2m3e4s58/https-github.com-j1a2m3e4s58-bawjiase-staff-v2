@@ -210,7 +210,7 @@ function FormDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="glass-card-elevated w-[min(92vw,44rem)] max-w-[44rem] max-h-[85vh] overflow-y-auto p-6 sm:max-w-[44rem]"
+        className="glass-card-elevated panel-sharp w-[min(92vw,44rem)] max-w-[44rem] max-h-[85vh] overflow-y-auto p-6 sm:max-w-[44rem]"
         data-ocid="forms.dialog"
       >
         <DialogHeader>
@@ -309,7 +309,7 @@ function FormDialog({
               </Select>
             </div>
           </div>
-          <div className="rounded-lg border border-border/50 bg-muted/20 p-3">
+          <div className="surface-muted p-3">
             <p className="text-sm font-medium text-foreground">
               {audienceSummary}
             </p>
@@ -387,12 +387,12 @@ function FormCard({ form, canManage, onEdit, onDelete, index }: FormCardProps) {
 
   return (
     <div
-      className="glass-card group rounded-xl p-4 transition-smooth hover:shadow-glass"
+      className="glass-card panel-sharp group p-4 transition-smooth hover:-translate-y-0.5 hover:shadow-glass"
       data-ocid={`forms.item.${index}`}
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="flex items-start gap-3 sm:min-w-0 sm:flex-1">
-          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10">
+          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center border border-primary/20 bg-primary/10">
             <FolderOpen className="h-5 w-5 text-primary" />
           </div>
 
@@ -664,39 +664,43 @@ export default function FormsPage() {
 
   return (
     <AppShell>
-      <div className="max-w-6xl mx-auto space-y-6" data-ocid="forms.page">
+      <div className="page-shell" data-ocid="forms.page">
         {actingScope ? (
-          <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm font-medium text-primary">
+          <div className="surface-muted border-primary/30 bg-primary/10 px-4 py-3 text-sm font-medium text-primary">
             {actingScope}
           </div>
         ) : null}
-        <div className="flex justify-end">
-          <LiveSyncBadge eventNames={[]} />
-        </div>
-        <div className="glass-card rounded-xl p-5 space-y-5">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <section className="page-header">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <h1 className="font-display text-2xl font-bold text-foreground flex items-center gap-2">
+              <div className="page-kicker">Operational documents</div>
+              <h1 className="page-title flex items-center gap-3">
                 <FolderOpen className="h-6 w-6 text-primary" />
                 Forms Library
               </h1>
-              <p className="text-sm text-muted-foreground mt-0.5">
+              <p className="page-subtitle">
                 View or download official forms.
               </p>
             </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 lg:min-w-[520px]">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  className="pl-9"
-                  placeholder="Search forms..."
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  data-ocid="forms.search_input"
-                  />
-                </div>
-                <Select value={branchFilter} onValueChange={setBranchFilter}>
+            <div className="page-actions">
+              <LiveSyncBadge eventNames={[]} />
+            </div>
+          </div>
+        </section>
+        <div className="glass-card panel-sharp p-5 space-y-5">
+          <div className="toolbar-surface">
+            <div className="relative flex-1 lg:min-w-[280px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                className="pl-9"
+                placeholder="Search forms..."
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                data-ocid="forms.search_input"
+              />
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Select value={branchFilter} onValueChange={setBranchFilter}>
                   <SelectTrigger className="sm:w-[180px]">
                     <SelectValue placeholder="Branch scope" />
                   </SelectTrigger>
@@ -709,7 +713,7 @@ export default function FormsPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
                   <SelectTrigger className="sm:w-[180px]">
                     <SelectValue placeholder="Department scope" />
                   </SelectTrigger>
@@ -722,8 +726,8 @@ export default function FormsPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                {canAdmin && (
-                  <Button
+              {canAdmin && (
+                <Button
                   type="button"
                   className="gap-2"
                   onClick={() => {
@@ -731,10 +735,10 @@ export default function FormsPage() {
                     setDialogOpen(true);
                   }}
                   data-ocid="forms.add_button"
-                >
-                  <Plus className="h-4 w-4" />
-                  New Form
-                </Button>
+                  >
+                    <Plus className="h-4 w-4" />
+                    New Form
+                  </Button>
               )}
             </div>
           </div>

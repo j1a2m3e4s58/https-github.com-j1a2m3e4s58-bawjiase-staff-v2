@@ -96,21 +96,21 @@ function StatTile({
   icon: ReactNode;
 }) {
   return (
-    <div className="glass-card panel-sharp rounded-xl border-t-4 border-t-primary/70 p-5 min-h-[150px]">
+    <div className="metric-card min-h-[160px]">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
             {label}
           </p>
-          <p className="mt-5 font-display text-3xl font-bold text-foreground">
+          <p className="mt-6 font-display text-3xl font-bold text-foreground">
             {value}
           </p>
         </div>
-        <div className="h-11 w-11 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+        <div className="flex h-11 w-11 items-center justify-center border border-primary/20 bg-primary/10 text-primary">
           {icon}
         </div>
       </div>
-      <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
         {detail}
       </p>
     </div>
@@ -129,9 +129,9 @@ function ShortcutTile({
   return (
     <Link
       to={to}
-      className="glass-card panel-sharp rounded-xl min-h-[140px] p-5 flex flex-col items-center justify-center gap-3 text-center font-display font-bold text-foreground hover:border-primary/40 hover:bg-primary/5 transition-smooth"
+      className="glass-card panel-sharp min-h-[148px] p-5 flex flex-col items-center justify-center gap-3 text-center font-display font-bold text-foreground hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/5 transition-smooth"
     >
-      <div className="text-primary">{icon}</div>
+      <div className="flex h-12 w-12 items-center justify-center border border-primary/20 bg-primary/10 text-primary">{icon}</div>
       <span>{label}</span>
     </Link>
   );
@@ -535,18 +535,19 @@ function WelcomePanel({ fullname }: { fullname: string }) {
         )
       : [];
   return (
-    <section className="panel-sharp-lg rounded-2xl bg-secondary/40 border border-secondary/30 p-6 md:p-7 min-h-[148px] flex flex-col md:flex-row md:items-center justify-between gap-5">
+    <section className="page-header min-h-[184px] flex flex-col justify-between gap-6">
       <div>
-        <h1 className="font-display text-2xl font-bold text-foreground">
+        <div className="page-kicker">Executive workspace</div>
+        <h1 className="page-title max-w-3xl text-balance text-foreground md:text-[2.6rem]">
           Welcome, {fullname}!
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground max-w-2xl leading-relaxed">
+        <p className="page-subtitle">
           Executive workspace for staff operations, internal communication, and
           branch-level oversight.
         </p>
       </div>
       <RoleGuard roles={["SuperAdmin", "HRAdmin", "Supervisor"]} permission="announcements">
-        <div className="flex md:flex-col gap-3 md:min-w-[132px]">
+        <div className="page-actions md:min-w-[260px] md:justify-end">
           <Button asChild size="sm" className="font-bold">
             <Link to="/news-portal">
               <Megaphone className="h-4 w-4 mr-2" />
@@ -562,7 +563,7 @@ function WelcomePanel({ fullname }: { fullname: string }) {
         </div>
       </RoleGuard>
       {supervisorScopeSummary.length > 0 ? (
-        <div className="panel-sharp w-full rounded-xl border border-border/40 bg-background/40 p-4">
+        <div className="surface-muted w-full p-4">
           <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             My Supervisor Scope
           </div>
@@ -634,13 +635,18 @@ function NewsFeed({
   const dateGroups = Object.keys(groupedAnnouncements);
 
   return (
-    <section>
-      <h2 className="font-display font-bold text-lg text-foreground flex items-center gap-2 mb-3">
-        <Newspaper className="h-5 w-5 text-primary" />
-        News Feed
-      </h2>
+    <section className="space-y-4">
+      <div className="section-heading">
+        <div>
+          <h2 className="section-title">
+            <Newspaper className="h-5 w-5 text-primary" />
+            News Feed
+          </h2>
+          <p className="section-copy">Internal announcements, updates, and policy communication.</p>
+        </div>
+      </div>
       {newsItems.length === 0 ? (
-        <div className="glass-card panel-sharp-lg rounded-2xl min-h-[220px] flex items-center justify-center">
+        <div className="glass-card panel-sharp-lg min-h-[240px] flex items-center justify-center">
           <EmptyState
             icon={<Newspaper className="h-10 w-10" />}
             title="No new announcements"
@@ -725,7 +731,7 @@ function OperationsPanel({
   return (
     <aside className="space-y-4">
       {canAccessITArea && (
-        <div className="glass-card panel-sharp-lg rounded-2xl p-5">
+        <div className="glass-card panel-sharp-lg p-5">
         <div className="flex items-center justify-between gap-3 mb-4">
           <div>
             <h2 className="font-display font-bold text-base text-foreground flex items-center gap-2">
@@ -742,7 +748,7 @@ function OperationsPanel({
 
         <Link
           to="/support/admin"
-          className="block glass-card panel-sharp rounded-xl p-4 transition-smooth hover:border-primary/40 hover:bg-primary/5 focus:outline-none focus:ring-2 focus:ring-primary/40"
+          className="block glass-card panel-sharp p-4 transition-smooth hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/5 focus:outline-none focus:ring-2 focus:ring-primary/40"
           data-ocid="dashboard.support_tickets.link"
         >
           <div className="flex items-center justify-between">
@@ -756,7 +762,7 @@ function OperationsPanel({
             Live system status
           </p>
           <div className="grid grid-cols-2 gap-3 mt-5">
-            <div className="panel-sharp rounded-xl border border-border/50 p-4 text-center">
+            <div className="surface-muted p-4 text-center">
               <div className="font-display text-3xl font-bold">
                 {overview.supportPending}
               </div>
@@ -764,7 +770,7 @@ function OperationsPanel({
                 Pending
               </div>
             </div>
-            <div className="panel-sharp rounded-xl border border-border/50 p-4 text-center">
+            <div className="surface-muted p-4 text-center">
               <div className="font-display text-3xl font-bold">
                 {overview.supportResolved}
               </div>
@@ -775,7 +781,7 @@ function OperationsPanel({
           </div>
         </Link>
 
-        <div className="panel-sharp mt-4 rounded-xl bg-muted/40 p-4">
+        <div className="surface-muted mt-4 p-4">
           <h3 className="font-display font-bold text-sm flex items-center gap-2">
             <Lock className="h-4 w-4" />
             IT Security Center
@@ -790,10 +796,13 @@ function OperationsPanel({
         </div>
       )}
 
-      <div>
-        <h2 className="font-display font-bold text-sm text-muted-foreground uppercase tracking-wider mb-3">
-          Executive Shortcuts
-        </h2>
+      <div className="space-y-3">
+        <div>
+          <h2 className="font-display font-bold text-sm text-muted-foreground uppercase tracking-wider">
+            Executive Shortcuts
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">Jump into high-value actions without leaving the dashboard.</p>
+        </div>
         <div className="grid grid-cols-2 gap-4">
           <ShortcutTile
             to="/support/amendment"
@@ -834,7 +843,7 @@ function OperationsPanel({
 function ExecutiveSummary({ overview }: { overview: DashboardOverview }) {
   return (
     <section className="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-4">
-      <div className="glass-card panel-sharp-lg rounded-2xl p-6 min-h-[240px]">
+      <div className="glass-card panel-sharp-lg p-6 min-h-[240px]">
         <Badge variant="outline" className="mb-8">
           <ShieldCheck className="h-3.5 w-3.5 mr-1" />
           Executive Brief
@@ -848,7 +857,7 @@ function ExecutiveSummary({ overview }: { overview: DashboardOverview }) {
         </p>
       </div>
 
-      <div className="glass-card panel-sharp-lg rounded-2xl p-5">
+      <div className="glass-card panel-sharp-lg p-5">
         <h2 className="font-display font-bold text-sm uppercase tracking-wider text-muted-foreground mb-4">
           Leadership Snapshot
         </h2>
@@ -875,7 +884,7 @@ function ExecutiveSummary({ overview }: { overview: DashboardOverview }) {
           ].map((item) => (
             <div
               key={item.title}
-              className="glass-card panel-sharp rounded-xl p-4 flex items-center gap-4"
+              className="glass-card panel-sharp p-4 flex items-center gap-4"
             >
               <div className="h-11 w-11 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                 {item.icon}
@@ -901,7 +910,7 @@ function ExecutiveSummary({ overview }: { overview: DashboardOverview }) {
 
 function StaffDistribution({ overview }: { overview: DashboardOverview }) {
   return (
-    <section className="glass-card panel-sharp-lg rounded-2xl p-5">
+    <section className="glass-card panel-sharp-lg p-5">
       <div className="flex items-center justify-between gap-3 mb-5">
         <h2 className="font-display font-bold text-lg text-foreground flex items-center gap-2">
           <Users className="h-5 w-5 text-primary" />
@@ -1033,7 +1042,7 @@ export default function DashboardPage() {
   return (
     <AppShell>
       <div
-        className="max-w-[1320px] mx-auto space-y-6"
+        className="page-shell max-w-[1320px]"
         data-ocid="dashboard.page"
       >
         {loading || !overview ? (
@@ -1054,7 +1063,7 @@ export default function DashboardPage() {
                 icon={<BarChart3 className="h-4 w-4 text-primary" />}
               />
             ) : null}
-            <section className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-6">
+            <section className="grid grid-cols-1 gap-6 xl:grid-cols-[2fr_1fr]">
               <div className="space-y-6">
                 <WelcomePanel fullname={user?.fullname ?? "Staff"} />
                 <NewsFeed announcements={announcements} />
@@ -1065,7 +1074,7 @@ export default function DashboardPage() {
               />
             </section>
 
-            <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <section className="metric-strip">
               <StatTile
                 label="Active Staff"
                 value={overview.totalStaff}

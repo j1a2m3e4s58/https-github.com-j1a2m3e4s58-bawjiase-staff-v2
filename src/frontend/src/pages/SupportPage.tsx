@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import {
   apiGetMyAmendments,
   apiGetMyIncidents,
@@ -116,9 +117,10 @@ function TextInput({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className={`h-10 w-full rounded-full border bg-card px-4 text-sm outline-none transition-smooth focus:ring-2 focus:ring-ring ${
-        invalid ? "border-destructive" : "border-input"
-      }`}
+      className={cn(
+        "control-sharp border-input dark:bg-input/30 h-10 w-full border bg-card px-4 text-sm outline-none transition-smooth focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50",
+        invalid && "border-destructive",
+      )}
     />
   );
 }
@@ -143,9 +145,10 @@ function SelectInput({
       id={id}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className={`h-10 w-full rounded-full border bg-card px-4 text-sm outline-none transition-smooth focus:ring-2 focus:ring-ring ${
-        invalid ? "border-destructive" : "border-input"
-      }`}
+      className={cn(
+        "control-sharp border-input dark:bg-input/30 h-10 w-full border bg-card px-4 text-sm outline-none transition-smooth focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50",
+        invalid && "border-destructive",
+      )}
     >
       <option value="">{placeholder}</option>
       {options.map((option) => (
@@ -196,7 +199,7 @@ function MissingDetailsDialog({
         <Button
           type="button"
           variant="secondary"
-          className="mx-auto mt-2 rounded-full px-8 font-bold"
+          className="mx-auto mt-2 px-8 font-bold"
           onClick={() => onOpenChange(false)}
         >
           Review Form
@@ -227,7 +230,7 @@ function SuccessDialog({
         <DialogDescription>{message}</DialogDescription>
         <Button
           type="button"
-          className="mx-auto mt-2 rounded-full px-8 font-bold"
+          className="mx-auto mt-2 px-8 font-bold"
           onClick={() => onOpenChange(false)}
         >
           Okay, Close
@@ -345,7 +348,7 @@ function IncidentForm({ onSubmitted }: { onSubmitted: () => void }) {
                 onChange={(e) => set("description")(e.target.value)}
                 placeholder="Describe the problem in detail..."
                 rows={4}
-                className={`resize-none rounded-xl bg-card ${
+                className={`resize-none bg-card ${
                   touched && !form.description.trim()
                     ? "border-destructive"
                     : ""
@@ -691,7 +694,7 @@ function RecentIncidents({ refreshKey }: { refreshKey: number }) {
         />
       ) : null}
       {incidents.slice(0, visibleCount).map((incident) => (
-        <div key={incident.id} className="glass-card rounded-xl p-4">
+        <div key={incident.id} className="glass-card panel-sharp p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">
@@ -801,7 +804,7 @@ function RecentAmendments({ refreshKey }: { refreshKey: number }) {
         />
       ) : null}
       {amendments.slice(0, visibleCount).map((amendment) => (
-        <div key={amendment.id} className="glass-card rounded-xl p-4">
+        <div key={amendment.id} className="glass-card panel-sharp p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">
@@ -849,30 +852,40 @@ export default function SupportPage() {
 
   return (
     <AppShell>
-      <div className="max-w-3xl mx-auto space-y-6" data-ocid="support.page">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
+      <div className="page-shell-compact" data-ocid="support.page">
+        <section className="page-header">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div className="page-kicker">Service desk</div>
+              <div className="mt-3 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center border border-primary/20 bg-primary/15">
               <Headphones className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-display font-bold text-foreground">
+              <h1 className="font-display text-2xl font-bold text-foreground">
                 IT Support
               </h1>
               <p className="text-sm text-muted-foreground">
                 Report incidents or request T24 profile amendments
               </p>
             </div>
+              </div>
+              <p className="page-subtitle mt-4 max-w-2xl">
+                Submit operational issues quickly, track your requests, and keep amendment history visible without leaving the page.
+              </p>
           </div>
-          <LiveSyncBadge eventNames={[]} />
-        </div>
+            <div className="page-actions">
+              <LiveSyncBadge eventNames={[]} />
+            </div>
+          </div>
+        </section>
 
         <Tabs
           key={defaultTab}
           defaultValue={defaultTab}
           data-ocid="support.tabs"
         >
-          <TabsList className="glass-card w-full justify-start">
+          <TabsList className="glass-card panel-sharp h-auto w-full justify-start p-1">
             <TabsTrigger value="incident" data-ocid="support.incident.tab">
               <TriangleAlert className="mr-2 h-4 w-4" />
               Report Incident
@@ -884,7 +897,7 @@ export default function SupportPage() {
           </TabsList>
 
           <TabsContent value="incident" className="space-y-6 mt-4">
-            <div className="glass-card-elevated rounded-2xl p-6">
+            <div className="glass-card-elevated panel-sharp p-6">
               <h2 className="text-base font-semibold text-foreground mb-4">
                 Submit an Incident Report
               </h2>
@@ -902,7 +915,7 @@ export default function SupportPage() {
           </TabsContent>
 
           <TabsContent value="amendment" className="space-y-6 mt-4">
-            <div className="glass-card-elevated rounded-2xl p-6">
+            <div className="glass-card-elevated panel-sharp p-6">
               <h2 className="text-base font-semibold text-foreground mb-4">
                 Request a T24 Amendment
               </h2>
