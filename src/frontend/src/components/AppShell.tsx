@@ -151,14 +151,6 @@ function logoutAndRedirect(logout: () => void) {
   window.location.replace(withBase("login"));
 }
 
-function getCurrentSectionLabel(pathname: string) {
-  const exactMatch = NAV_ITEMS.find((item) =>
-    item.to === "/"
-      ? pathname === "/"
-      : pathname === item.to || pathname.startsWith(`${item.to}/`),
-  );
-  return exactMatch?.label ?? "Workspace";
-}
 
 // ── Sidebar ────────────────────────────────────────────────────────────────────
 
@@ -469,8 +461,6 @@ function MobileDrawer({
 function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
   const { user, logout } = useAuth();
   const isMobile = useIsMobile();
-  const location = useLocation();
-  const currentSection = getCurrentSectionLabel(location.pathname);
   const initials =
     user?.fullname
       ?.split(" ")
@@ -498,9 +488,6 @@ function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
           </Button>
         )}
         <div className="min-w-0">
-          <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-primary/80">
-            {currentSection}
-          </div>
           <span className="block truncate font-display text-sm font-semibold text-foreground/70">
             Bawjiase Area Rural Bank PLC
           </span>
@@ -563,7 +550,6 @@ function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
 function DesktopTopNav() {
   const { user, logout } = useAuth();
   const location = useLocation();
-  const currentSection = getCurrentSectionLabel(location.pathname);
   const initials =
     user?.fullname
       ?.split(" ")
@@ -609,8 +595,8 @@ function DesktopTopNav() {
 
   return (
     <header className="sticky top-4 z-40 mx-4 mt-4 panel-sharp-lg glass-card-elevated overflow-hidden border border-border/40 px-4 py-3">
-      <div className="flex flex-wrap items-center gap-3 xl:flex-nowrap">
-        <Link to="/" className="flex items-center gap-3 w-[220px] shrink-0">
+      <div className="flex items-center gap-3">
+        <Link to="/" className="flex min-w-[220px] shrink-0 items-center gap-3">
           <BCBBadge size="md" />
           <div className="min-w-0">
             <div className="font-display font-bold text-sm text-foreground leading-tight">
@@ -622,7 +608,7 @@ function DesktopTopNav() {
           </div>
         </Link>
 
-        <nav className="flex-1 min-w-0 flex items-center justify-center gap-1 overflow-x-auto">
+        <nav className="flex min-w-0 flex-1 items-center justify-center gap-1">
           {visibleItems.map((item) => {
             const isActive =
               item.to === "/"
@@ -633,7 +619,7 @@ function DesktopTopNav() {
                 key={`${item.to}-${item.label}`}
                 to={item.to}
                 className={cn(
-                  "panel-sharp inline-flex min-h-11 items-center justify-center gap-2 px-2 text-[12px] font-semibold whitespace-nowrap transition-smooth xl:px-3 xl:text-sm",
+                  "panel-sharp inline-flex min-h-11 items-center justify-center gap-2 px-2 text-[12px] font-semibold whitespace-nowrap transition-smooth lg:px-2.5 xl:px-3 xl:text-sm",
                   isActive
                     ? "bg-primary/15 text-primary"
                     : "text-foreground/70 hover:bg-muted/60 hover:text-foreground",
@@ -649,16 +635,7 @@ function DesktopTopNav() {
           })}
         </nav>
 
-        <div className="hidden xl:flex min-w-[150px] shrink-0 flex-col text-right">
-          <span className="text-[10px] font-bold uppercase tracking-[0.26em] text-primary/80">
-            Current section
-          </span>
-          <span className="truncate font-display text-sm font-semibold text-foreground">
-            {currentSection}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2 w-[190px] shrink-0 justify-end">
+        <div className="flex min-w-[190px] shrink-0 items-center justify-end gap-2">
           <NotificationBell />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

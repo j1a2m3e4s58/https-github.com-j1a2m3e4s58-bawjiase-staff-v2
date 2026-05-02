@@ -224,10 +224,9 @@ export default function PastStaffPage() {
             <UserX className="h-6 w-6 text-muted-foreground" />
             Past Staff
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <p className="page-subtitle">
             Archived staff members — restore or permanently remove records.
           </p>
-        </div>
 
         </section>
 

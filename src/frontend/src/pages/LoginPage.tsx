@@ -42,8 +42,8 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthShell className="flex min-h-[560px] max-w-[450px] flex-col justify-center px-4 pb-5 pt-20 sm:px-5">
-      <div className="mb-10 space-y-3 text-center">
+    <AuthShell className="max-w-[450px] px-5 pb-6 pt-20">
+      <div className="mb-8 space-y-3 text-center">
         <div className="page-kicker text-center">Secure staff access</div>
         <h1 className="font-display text-3xl font-bold text-foreground">
           Staff Portal
@@ -55,7 +55,7 @@ export default function LoginPage() {
 
       <form
         onSubmit={handleSubmit}
-        className="space-y-5"
+        className="space-y-4"
         data-ocid="login.form"
       >
         <div className="space-y-2">
@@ -154,7 +154,7 @@ export default function LoginPage() {
         </Button>
       </form>
 
-      <div className="mt-4 border-t border-border/40 pt-5 text-center">
+        <div className="mt-4 border-t border-border/40 pt-4 text-center">
         <p className="text-sm text-muted-foreground">
           New Staff?{" "}
           <Link

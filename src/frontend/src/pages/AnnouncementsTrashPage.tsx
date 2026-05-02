@@ -277,7 +277,7 @@ export default function AnnouncementsTrashPage() {
               <Trash2 className="h-6 w-6 text-destructive/70" />
               Recycle Bin
             </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <p className="page-subtitle">
               Trashed announcements — restore or delete permanently
             </p>
           </div>
@@ -311,7 +311,6 @@ export default function AnnouncementsTrashPage() {
             <Button
               type="button"
               variant="outline"
-              size="sm"
               onClick={() => navigate({ to: "/announcements" })}
               data-ocid="trash.back.link"
             >
@@ -362,10 +361,11 @@ export default function AnnouncementsTrashPage() {
             )}
           </div>
         </div>
+        </section>
 
         {/* Count badge */}
         {!loading && filteredTrash.length > 0 && (
-          <div className="flex items-center gap-2">
+          <div className="page-badge-row">
             <Badge variant="secondary" className="text-xs">
               {filteredTrash.length} item{filteredTrash.length !== 1 ? "s" : ""} in trash
             </Badge>
