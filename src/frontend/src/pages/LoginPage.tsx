@@ -42,26 +42,26 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthShell className="max-w-[450px] px-5 pb-6 pt-20">
-      <div className="mb-8 space-y-3 text-center">
+    <AuthShell className="max-w-[450px] px-4 pb-5 pt-20 sm:px-5">
+      <div className="mb-4 space-y-1 text-center">
         <div className="page-kicker text-center">Secure staff access</div>
-        <h1 className="font-display text-3xl font-bold text-foreground">
+        <h1 className="font-display text-2xl font-bold text-foreground">
           Staff Portal
         </h1>
-        <p className="mx-auto max-w-xs text-sm leading-6 text-muted-foreground">
+        <p className="mx-auto max-w-[18rem] text-xs leading-5 text-muted-foreground">
           Sign in to manage communication, people records, and internal operations.
         </p>
       </div>
 
       <form
         onSubmit={handleSubmit}
-        className="space-y-4"
+        className="space-y-3"
         data-ocid="login.form"
       >
-        <div className="space-y-2">
+        <div className="space-y-1">
           <Label
             htmlFor="email"
-            className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
+            className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground"
           >
             Official Email
           </Label>
@@ -71,17 +71,17 @@ export default function LoginPage() {
             placeholder="you@bawjiasearearuralbank.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="h-12 glass-input text-base"
+            className="h-9 glass-input text-sm"
             autoComplete="email"
             required
             data-ocid="login.email.input"
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-1">
           <Label
             htmlFor="password"
-            className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
+            className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground"
           >
             Password
           </Label>
@@ -92,14 +92,14 @@ export default function LoginPage() {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="h-12 glass-input pr-12 text-base"
+              className="h-9 glass-input pr-10 text-sm"
               autoComplete="current-password"
               required
               data-ocid="login.password.input"
             />
             <button
               type="button"
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-smooth hover:text-foreground"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-smooth hover:text-foreground"
               onClick={() => setShowPassword(!showPassword)}
               aria-label={showPassword ? "Hide password" : "Show password"}
               data-ocid="login.password_toggle.button"
@@ -121,10 +121,7 @@ export default function LoginPage() {
               onCheckedChange={(v) => setRememberMe(v === true)}
               data-ocid="login.remember_me.checkbox"
             />
-            <Label
-              htmlFor="remember"
-              className="cursor-pointer text-muted-foreground"
-            >
+            <Label htmlFor="remember" className="cursor-pointer text-muted-foreground">
               Remember me
             </Label>
           </div>
@@ -139,7 +136,7 @@ export default function LoginPage() {
 
         <Button
           type="submit"
-          className="h-12 w-full glass-button text-sm font-bold uppercase tracking-[0.18em]"
+          className="h-10 w-full glass-button text-sm font-bold uppercase tracking-[0.16em]"
           disabled={isLoading || !email || !password}
           data-ocid="login.submit_button"
         >
@@ -154,7 +151,7 @@ export default function LoginPage() {
         </Button>
       </form>
 
-        <div className="mt-4 border-t border-border/40 pt-4 text-center">
+      <div className="mt-3 border-t border-border/40 pt-3 text-center">
         <p className="text-sm text-muted-foreground">
           New Staff?{" "}
           <Link
@@ -165,7 +162,7 @@ export default function LoginPage() {
             Sign Up
           </Link>
         </p>
-        <p className="mt-3 text-xs text-muted-foreground">
+        <p className="mt-2 text-xs text-muted-foreground">
           Authorized Access Only
         </p>
       </div>
