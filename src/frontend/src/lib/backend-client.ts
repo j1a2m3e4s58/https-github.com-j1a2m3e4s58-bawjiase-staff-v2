@@ -288,7 +288,7 @@ async function getMailApiJson(path: string): Promise<Record<string, unknown>> {
       method: "GET",
       cache: "no-store",
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    );
+    });
   });
   const data = (await response.json().catch(() => ({}))) as Record<string, unknown> & {
     error?: string;
@@ -621,7 +621,7 @@ async function postOptionalApi(
       },
       body: JSON.stringify(payload),
       signal: controller.signal,
-    );
+    });
     if (!response.ok) return null;
     return (await response.json().catch(() => ({}))) as Record<string, unknown>;
   } catch {
@@ -646,7 +646,7 @@ async function getOptionalApi(
       method: "GET",
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       signal: controller.signal,
-    );
+    });
     if (!response.ok) return null;
     return (await response.json().catch(() => ({}))) as Record<string, unknown>;
   } catch {
@@ -680,7 +680,7 @@ async function postKeepaliveApi(
       },
       body: JSON.stringify(payload),
       keepalive: true,
-    );
+    });
   } catch {
     // Ignore keepalive failures so logout can still continue locally.
   }
