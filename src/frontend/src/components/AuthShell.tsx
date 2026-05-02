@@ -26,7 +26,7 @@ interface AuthShellProps {
 export function AuthShell({ children, className }: AuthShellProps) {
   return (
     <div
-      className="h-screen bg-background relative overflow-hidden"
+      className="relative min-h-screen overflow-hidden bg-background"
       data-ocid="auth_shell"
     >
       <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
@@ -43,15 +43,15 @@ export function AuthShell({ children, className }: AuthShellProps) {
         <ThemeToggle />
       </div>
 
-      <div className="relative flex h-full items-center justify-center px-4 py-8">
+      <div className="relative flex min-h-screen items-center justify-center px-4 py-14 sm:px-6 sm:py-16">
         <div
           className={cn(
-            "relative mt-12 w-full max-w-md panel-sharp-lg glass-card-elevated overflow-hidden px-6 pb-7 pt-20 shadow-glass-dark",
+            "relative w-full max-w-md panel-sharp-lg glass-card-elevated overflow-visible px-6 pb-8 pt-24 shadow-glass-dark",
             className,
           )}
         >
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-          <div className="absolute -top-12 left-1/2 -translate-x-1/2">
+          <div className="absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1/2">
             <BCBLogoBadge />
           </div>
           {children}

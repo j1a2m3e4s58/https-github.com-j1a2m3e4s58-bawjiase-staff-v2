@@ -234,7 +234,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <AuthShell className="h-[550px] max-w-[450px] px-4 pb-3 pt-16 sm:px-5">
+    <AuthShell className="max-w-[450px] px-4 pb-5 pt-20 sm:px-5">
       <div className="mb-3 space-y-0.5 text-center">
         <h1 className="font-display font-bold text-xl text-foreground">
           Staff Registration
