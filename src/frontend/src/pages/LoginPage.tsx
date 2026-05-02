@@ -42,13 +42,13 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthShell className="max-w-[450px] px-4 pb-5 pt-20 sm:px-5">
-      <div className="mb-4 space-y-1 text-center">
+    <AuthShell className="flex min-h-[520px] max-w-[420px] flex-col justify-center px-4 pb-6 pt-20 sm:px-5">
+      <div className="mb-6 space-y-1.5 text-center">
         <div className="page-kicker text-center">Secure staff access</div>
         <h1 className="font-display text-2xl font-bold text-foreground">
           Staff Portal
         </h1>
-        <p className="mx-auto max-w-[18rem] text-xs leading-5 text-muted-foreground">
+        <p className="mx-auto max-w-[17rem] text-xs leading-5 text-muted-foreground">
           Sign in to manage communication, people records, and internal operations.
         </p>
       </div>
