@@ -24,13 +24,13 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "surface-muted flex flex-col items-center justify-center px-6 py-16 text-center",
+        "surface-muted flex min-h-[240px] flex-col items-center justify-center px-6 py-16 text-center",
         className,
       )}
       data-ocid={ocid}
     >
       {icon && (
-        <div className="mb-5 flex h-16 w-16 items-center justify-center border border-border/40 bg-primary/8 text-primary shadow-sm">
+        <div className="mb-5 flex h-16 w-16 items-center justify-center border border-border/40 bg-primary/8 text-primary shadow-sm transition-smooth">
           {icon}
         </div>
       )}

@@ -19,7 +19,7 @@ export function RetryPanel({
     <div
       className={`surface-muted ${
         compact ? "p-4" : "p-5"
-      }`}
+      } transition-smooth`}
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">

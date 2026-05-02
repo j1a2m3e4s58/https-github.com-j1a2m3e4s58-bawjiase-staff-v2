@@ -151,6 +151,15 @@ function logoutAndRedirect(logout: () => void) {
   window.location.replace(withBase("login"));
 }
 
+function getCurrentSectionLabel(pathname: string) {
+  const exactMatch = NAV_ITEMS.find((item) =>
+    item.to === "/"
+      ? pathname === "/"
+      : pathname === item.to || pathname.startsWith(`${item.to}/`),
+  );
+  return exactMatch?.label ?? "Workspace";
+}
+
 // ── Sidebar ────────────────────────────────────────────────────────────────────
 
 interface SidebarProps {
@@ -460,6 +469,8 @@ function MobileDrawer({
 function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
   const { user, logout } = useAuth();
   const isMobile = useIsMobile();
+  const location = useLocation();
+  const currentSection = getCurrentSectionLabel(location.pathname);
   const initials =
     user?.fullname
       ?.split(" ")
@@ -471,10 +482,11 @@ function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
 
   return (
     <header
-      className="sticky top-0 z-40 glass-card border-b border-border/30 flex h-14 items-center justify-between px-4"
+      className="sticky top-0 z-40 glass-card border-b border-border/30 px-4 py-3 backdrop-blur-xl"
       data-ocid="appshell.topbar"
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-4">
+      <div className="flex min-w-0 items-center gap-3">
         {isMobile && (
           <Button
             variant="ghost"
@@ -485,8 +497,11 @@ function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
             <Menu className="h-5 w-5" />
           </Button>
         )}
-        <div className="hidden sm:block">
-          <span className="font-display font-semibold text-sm text-foreground/70">
+        <div className="min-w-0">
+          <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-primary/80">
+            {currentSection}
+          </div>
+          <span className="block truncate font-display text-sm font-semibold text-foreground/70">
             Bawjiase Area Rural Bank PLC
           </span>
         </div>
@@ -538,6 +553,7 @@ function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      </div>
     </header>
   );
 }
@@ -547,6 +563,7 @@ function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
 function DesktopTopNav() {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const currentSection = getCurrentSectionLabel(location.pathname);
   const initials =
     user?.fullname
       ?.split(" ")
@@ -592,7 +609,7 @@ function DesktopTopNav() {
 
   return (
     <header className="sticky top-4 z-40 mx-4 mt-4 panel-sharp-lg glass-card-elevated overflow-hidden border border-border/40 px-4 py-3">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 xl:flex-nowrap">
         <Link to="/" className="flex items-center gap-3 w-[220px] shrink-0">
           <BCBBadge size="md" />
           <div className="min-w-0">
@@ -605,7 +622,7 @@ function DesktopTopNav() {
           </div>
         </Link>
 
-        <nav className="flex-1 min-w-0 flex items-center justify-center gap-1">
+        <nav className="flex-1 min-w-0 flex items-center justify-center gap-1 overflow-x-auto">
           {visibleItems.map((item) => {
             const isActive =
               item.to === "/"
@@ -631,6 +648,15 @@ function DesktopTopNav() {
             );
           })}
         </nav>
+
+        <div className="hidden xl:flex min-w-[150px] shrink-0 flex-col text-right">
+          <span className="text-[10px] font-bold uppercase tracking-[0.26em] text-primary/80">
+            Current section
+          </span>
+          <span className="truncate font-display text-sm font-semibold text-foreground">
+            {currentSection}
+          </span>
+        </div>
 
         <div className="flex items-center gap-2 w-[190px] shrink-0 justify-end">
           <NotificationBell />
@@ -702,7 +728,7 @@ export function AppShell({ children }: AppShellProps) {
         {isMobile && <TopBar onMenuClick={() => setDrawerOpen(true)} />}
         {!isMobile && <DesktopTopNav />}
         <main
-          className={cn("flex-1 overflow-y-auto p-4 md:p-6 lg:p-7", isMobile && "pb-20")}
+          className={cn("flex-1 overflow-y-auto p-4 md:p-6 lg:p-7 xl:px-8", isMobile && "pb-20")}
           data-ocid="appshell.main_content"
         >
           {children}

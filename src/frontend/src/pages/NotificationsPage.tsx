@@ -116,7 +116,7 @@ function NotifItem({
     <button
       type="button"
       onClick={handleClick}
-      className={`w-full text-left flex items-start gap-3 px-4 py-3.5 transition-smooth group ${
+      className={`group flex w-full items-start gap-3 px-4 py-3.5 text-left transition-smooth ${
         notif.isRead
           ? "hover:bg-muted/50"
           : "bg-primary/5 hover:bg-primary/10 border-l-2 border-primary"
@@ -335,10 +335,7 @@ export default function NotificationsPage() {
         </section>
 
         {isLoading ? (
-          <div
-            className="glass-card panel-sharp divide-y divide-border/30"
-            data-ocid="notifications.loading_state"
-          >
+          <div className="data-panel divide-y divide-border/30" data-ocid="notifications.loading_state">
             {[1, 2, 3, 4, 5].map((i) => (
               <SkeletonRow key={`sk-notif-${i}`} className="py-4" />
             ))}
@@ -357,7 +354,7 @@ export default function NotificationsPage() {
                 <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
                   {label}
                 </h2>
-                <div className="glass-card panel-sharp overflow-hidden divide-y divide-border/20">
+                <div className="data-panel divide-y divide-border/20">
                   {items.map((notif, i) => (
                     <NotifItem
                       key={notif.id}

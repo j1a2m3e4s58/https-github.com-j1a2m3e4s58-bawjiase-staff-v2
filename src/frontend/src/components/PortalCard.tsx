@@ -23,7 +23,7 @@ export function PortalCard({
   return (
     <div
       className={cn(
-        "panel-sharp rounded-xl p-5 transition-smooth",
+        "panel-sharp p-5 transition-smooth",
         elevated ? "glass-card-elevated" : "glass-card",
         className,
       )}

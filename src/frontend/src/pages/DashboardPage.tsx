@@ -180,7 +180,7 @@ function AnnouncementAttachment({
   return (
     <div className={compact ? "mt-3 space-y-3" : "mt-4 space-y-4"}>
       {resolvedImageUrl && (
-        <div className="overflow-hidden rounded-xl border border-border/30 bg-muted/30">
+        <div className="panel-sharp overflow-hidden border border-border/30 bg-muted/30">
           <img
             src={resolvedImageUrl}
             alt={ann.title}
@@ -196,7 +196,7 @@ function AnnouncementAttachment({
       )}
 
       {resolvedFileUrl && (
-        <div className="flex items-center justify-between gap-3 flex-wrap rounded-xl border border-border/30 bg-background/50 px-4 py-3">
+        <div className="panel-sharp flex flex-wrap items-center justify-between gap-3 border border-border/30 bg-background/50 px-4 py-3">
           <div className="min-w-0">
             <p className="text-sm font-semibold text-foreground truncate">
               {filename}
@@ -286,7 +286,7 @@ function PollWidget({
               type="button"
               onClick={() => handleVote(opt.id)}
               disabled={voted !== null || !poll.isActive || submittingVote}
-              className={`w-full text-left rounded-lg overflow-hidden border transition-smooth ${
+            className={`panel-sharp w-full overflow-hidden border text-left transition-smooth ${
                 isVoted
                   ? "border-primary/50 bg-primary/10"
                   : "border-border/40 hover:border-primary/30 hover:bg-muted/40"
@@ -451,7 +451,7 @@ function AnnouncementCard({
   });
 
   return (
-    <div className="glass-card rounded-xl p-4 text-left block w-full hover:border-primary/40 hover:bg-primary/5 transition-smooth">
+    <div className="glass-card panel-sharp block w-full p-4 text-left transition-smooth hover:border-primary/40 hover:bg-primary/5">
       <div className="flex items-center justify-between gap-3">
         <Badge variant="outline" className="text-[10px]">
           News
@@ -507,7 +507,7 @@ function AnnouncementCard({
         {formatAudienceSummary(ann.branchScope, ann.departmentScope)}
       </p>
       {ann.poll && (
-        <div className="mt-3 rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground">
+        <div className="panel-sharp mt-3 bg-muted/40 p-3 text-xs text-muted-foreground">
           <span className="font-semibold text-foreground">Poll:</span>{" "}
           {ann.poll.question}
           <div className="mt-2 text-primary font-medium flex items-center gap-1.5">
@@ -882,11 +882,8 @@ function ExecutiveSummary({ overview }: { overview: DashboardOverview }) {
               detail: "current communication volume.",
             },
           ].map((item) => (
-            <div
-              key={item.title}
-              className="glass-card panel-sharp p-4 flex items-center gap-4"
-            >
-              <div className="h-11 w-11 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+            <div key={item.title} className="glass-card panel-sharp flex items-center gap-4 p-4">
+              <div className="panel-sharp flex h-11 w-11 items-center justify-center bg-primary/10 text-primary">
                 {item.icon}
               </div>
               <div className="min-w-0">

@@ -135,9 +135,9 @@ function roleBadgeVariant(role: Role): "default" | "secondary" | "outline" {
 function ProfileSkeleton() {
   return (
     <div className="page-shell-compact pb-8">
-      <div className="h-44 panel-sharp bg-card/70 animate-pulse" />
-      <div className="h-96 panel-sharp bg-card/70 animate-pulse" />
-      <div className="h-40 panel-sharp bg-card/70 animate-pulse" />
+      <div className="glass-card-elevated h-44 panel-sharp animate-pulse" />
+      <div className="glass-card h-96 panel-sharp animate-pulse" />
+      <div className="glass-card h-40 panel-sharp animate-pulse" />
     </div>
   );
 }
@@ -152,9 +152,11 @@ function InfoRow({
   value: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-3 py-0.5">
-      <span className="text-muted-foreground flex-shrink-0">{icon}</span>
-      <span className="text-xs text-muted-foreground w-24 flex-shrink-0">
+    <div className="flex items-center gap-3 border-b border-border/20 py-2 last:border-b-0">
+      <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center bg-primary/8 text-muted-foreground">
+        {icon}
+      </span>
+      <span className="w-24 flex-shrink-0 text-xs text-muted-foreground">
         {label}
       </span>
       <span className="text-sm text-foreground min-w-0 truncate">{value}</span>
@@ -389,6 +391,16 @@ export default function ProfilePage() {
           <p className="page-subtitle">
             Review your identity details, keep your contact information current, and manage your account presence.
           </p>
+          <div className="page-badge-row">
+            <Badge variant={roleBadgeVariant(user.role)}>
+              <Shield className="mr-1 h-3 w-3" />
+              {roleLabel(user.role)}
+            </Badge>
+            <Badge variant="outline" className="text-xs">
+              <MapPin className="mr-1 h-3 w-3" />
+              {user.branch}
+            </Badge>
+          </div>
         </section>
         <PortalCard elevated data-ocid="profile.header.card">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
@@ -438,7 +450,7 @@ export default function ProfilePage() {
               <p className="text-xs text-muted-foreground mt-0.5">
                 {(cleanPosition || "Staff") + " - " + user.department}
               </p>
-              <div className="flex flex-wrap gap-2 mt-3 justify-center sm:justify-start">
+              <div className="mt-3 flex flex-wrap justify-center gap-2 sm:justify-start">
                 <Badge variant={roleBadgeVariant(user.role)}>
                   <Shield className="h-3 w-3 mr-1" />
                   {roleLabel(user.role)}
