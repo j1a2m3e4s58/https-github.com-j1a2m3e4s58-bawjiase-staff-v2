@@ -1,6 +1,11 @@
 import { createActor } from "@/backend";
 import { createActorWithConfig } from "@caffeineai/core-infrastructure";
-import { buildAgmAuthClient, type AgmLoginResult, type AgmRole } from "@/lib/agm-auth-client";
+import {
+  buildAgmAuthClient,
+  buildLocalAgmAuthClient,
+  type AgmLoginResult,
+  type AgmRole,
+} from "@/lib/agm-auth-client";
 import {
   createContext,
   useCallback,
@@ -132,7 +137,7 @@ export function AgmAuthProvider({ children }: { children: ReactNode }) {
 
   const requireClient = useCallback(() => {
     if (!actorRef.current) {
-      throw new Error("AGM backend not ready");
+      return buildLocalAgmAuthClient();
     }
     return buildAgmAuthClient(actorRef.current);
   }, []);

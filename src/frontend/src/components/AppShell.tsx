@@ -595,12 +595,6 @@ function DesktopTopNav() {
       label: "Handbook",
       icon: <BookOpen className="h-4 w-4" />,
     },
-    {
-      to: "/audit",
-      label: "Audit Logs",
-      icon: <ClipboardList className="h-4 w-4" />,
-      departments: ["IT"],
-    },
   ];
   const visibleItems = topNavItems.filter((item) => canSeeNavItem(user, item));
 
