@@ -9,6 +9,8 @@ It creates:
 
 The frontend build uses `VITE_MAIL_API_URL=https://bawjiase-staff-api.onrender.com/api` so upload and API requests go directly to the Render API service during preview deploys.
 
+Note: the static-site build command should use `corepack pnpm ...` directly on Render. Do not use `corepack enable` there, because Render's filesystem can be read-only during builds.
+
 ## How to deploy
 
 1. Push this repo to GitHub.

@@ -29,7 +29,7 @@ services:
     name: bawjiase-staff-preview
     runtime: static
     rootDir: src/frontend
-    buildCommand: corepack enable && corepack pnpm install --frozen-lockfile && corepack pnpm build
+    buildCommand: corepack pnpm install --frozen-lockfile && corepack pnpm build
     staticPublishPath: dist
     envVars:
       - key: VITE_MAIL_API_URL
