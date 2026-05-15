@@ -20,6 +20,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import {
   Bell,
   BookOpen,
+  BriefcaseBusiness,
   ChevronRight,
   ClipboardList,
   Download,
@@ -74,6 +75,11 @@ const NAV_ITEMS: NavItem[] = [
     label: "Training",
     icon: <GraduationCap className="h-5 w-5" />,
     bottomNav: true,
+  },
+  {
+    to: "/agm",
+    label: "AGM Portal",
+    icon: <BriefcaseBusiness className="h-5 w-5" />,
   },
   {
     to: "/forms",
@@ -573,6 +579,11 @@ function DesktopTopNav() {
       to: "/directory",
       label: "Staff Directory",
       icon: <Users className="h-4 w-4" />,
+    },
+    {
+      to: "/agm",
+      label: "AGM Portal",
+      icon: <BriefcaseBusiness className="h-4 w-4" />,
     },
     {
       to: "/forms",

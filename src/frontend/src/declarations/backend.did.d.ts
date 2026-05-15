@@ -37,6 +37,142 @@ export interface AuditLog {
   'timestamp' : bigint,
   'ipAddress' : string,
 }
+export type AgmUserRole = { 'Viewer' : null } |
+  { 'RegistrationOfficer' : null } |
+  { 'ReportsViewer' : null } |
+  { 'BoardViewer' : null } |
+  { 'Admin' : null } |
+  { 'SuperAdmin' : null };
+export interface AgmLoginResponse {
+  'token' : string,
+  'username' : string,
+  'role' : AgmUserRole,
+  'mustChangePassword' : boolean,
+}
+export interface AgmSession {
+  'token' : string,
+  'expiresAt' : bigint,
+  'username' : string,
+  'role' : AgmUserRole,
+}
+export type AgmShareholderStatus = { 'CheckedIn' : null } |
+  { 'NotRegistered' : null } |
+  { 'RegisteredInPerson' : null } |
+  { 'RegisteredProxy' : null };
+export interface AgmShareholderInput {
+  'email' : [] | [string],
+  'fullName' : string,
+  'idNumber' : string,
+  'phone' : [] | [string],
+  'shareholderNumber' : string,
+  'shareholding' : bigint,
+  'tags' : Array<string>,
+}
+export interface AgmShareholder {
+  'email' : [] | [string],
+  'fullName' : string,
+  'id' : string,
+  'idNumber' : string,
+  'importedAt' : bigint,
+  'importedBy' : string,
+  'phone' : [] | [string],
+  'shareholderNumber' : string,
+  'shareholding' : bigint,
+  'status' : AgmShareholderStatus,
+  'tags' : Array<string>,
+}
+export interface AgmSearchResult {
+  'items' : Array<AgmShareholder>,
+  'page' : bigint,
+  'total' : bigint,
+}
+export type AgmRegistrationType = { 'InPerson' : null } |
+  { 'Proxy' : null };
+export interface AgmProxyData {
+  'proxyContact' : string,
+  'proxyName' : string,
+  'proxyProofKey' : [] | [string],
+}
+export interface AgmRegistration {
+  'id' : string,
+  'notes' : [] | [string],
+  'proxyContact' : [] | [string],
+  'proxyFraudFlags' : Array<string>,
+  'proxyName' : [] | [string],
+  'proxyProofKey' : [] | [string],
+  'proxyProofValidated' : boolean,
+  'registeredAt' : bigint,
+  'registeredBy' : string,
+  'registrationType' : AgmRegistrationType,
+  'shareholderId' : string,
+  'updatedAt' : bigint,
+  'updatedBy' : [] | [string],
+  'verificationCode' : string,
+}
+export interface AgmRegistrationUpdate {
+  'notes' : [] | [string],
+  'proxyData' : [] | [AgmProxyData],
+  'registrationType' : [] | [AgmRegistrationType],
+  'verificationCode' : [] | [string],
+}
+export type AgmCheckInMethod = { 'Manual' : null } |
+  { 'ManualQuick' : null } |
+  { 'QRScan' : null };
+export interface AgmCheckIn {
+  'checkedInAt' : bigint,
+  'checkedInBy' : string,
+  'id' : string,
+  'method' : AgmCheckInMethod,
+  'registrationId' : string,
+  'shareholderId' : string,
+}
+export interface AgmBulkCreateResult {
+  'created' : bigint,
+  'duplicates' : bigint,
+  'errors' : Array<string>,
+}
+export type AgmImportStatus = { 'Complete' : null } |
+  { 'Failed' : null } |
+  { 'Pending' : null } |
+  { 'Processing' : null };
+export interface AgmImportBatch {
+  'duplicatesSkipped' : bigint,
+  'filename' : string,
+  'id' : string,
+  'importedRows' : bigint,
+  'status' : AgmImportStatus,
+  'totalRows' : bigint,
+  'uploadedAt' : bigint,
+  'uploadedBy' : string,
+}
+export interface AgmDashboardMetrics {
+  'attendanceRate' : number,
+  'checkedIn' : bigint,
+  'lastUpdated' : bigint,
+  'notRegistered' : bigint,
+  'quorumStatus' : boolean,
+  'registered' : bigint,
+  'registeredInPerson' : bigint,
+  'registeredProxy' : bigint,
+  'totalShareholders' : bigint,
+}
+export interface AgmSettings {
+  'agmDate' : string,
+  'agmName' : string,
+  'quorumThreshold' : bigint,
+  'sessionTimeoutMinutes' : bigint,
+  'venue' : string,
+}
+export interface AgmAuditEntry {
+  'action' : string,
+  'details' : string,
+  'entityId' : string,
+  'entityType' : string,
+  'id' : string,
+  'ipAddress' : [] | [string],
+  'performedAt' : bigint,
+  'performedBy' : string,
+}
 export type Branch = { 'Bawjiase' : null } |
   { 'KasoaMain' : null } |
   { 'Ofaakor' : null } |
@@ -273,6 +409,87 @@ export interface _SERVICE {
   'logAction' : ActorMethod<[string, string, string, string], undefined>,
   'logAnnouncementDownload' : ActorMethod<[bigint], undefined>,
   'login' : ActorMethod<[string, string], { 'ok' : User } | { 'err' : string }>,
+  'agmLogin' : ActorMethod<
+    [string, string],
+    { 'ok' : AgmLoginResponse } | { 'err' : string }
+  >,
+  'agmValidateSession' : ActorMethod<
+    [string],
+    { 'ok' : AgmSession } | { 'err' : string }
+  >,
+  'agmLogout' : ActorMethod<[string], undefined>,
+  'agmChangePassword' : ActorMethod<
+    [string, string, string],
+    { 'ok' : null } | { 'err' : string }
+  >,
+  'agmChangePasswordSecure' : ActorMethod<
+    [string, string, string],
+    { 'ok' : null } | { 'err' : string }
+  >,
+  'agmResetPasswordWithCode' : ActorMethod<
+    [string, string, string],
+    { 'ok' : null } | { 'err' : string }
+  >,
+  'agmGetSettings' : ActorMethod<[string], AgmSettings>,
+  'agmUpdateSettings' : ActorMethod<
+    [string, string, AgmSettings],
+    { 'ok' : AgmSettings } | { 'err' : string }
+  >,
+  'agmGetAllShareholders' : ActorMethod<[string], Array<AgmShareholder>>,
+  'agmGetAllShareholdersSecure' : ActorMethod<
+    [string, string],
+    { 'ok' : Array<AgmShareholder> } | { 'err' : string }
+  >,
+  'agmSearchShareholders' : ActorMethod<
+    [string, string, [] | [AgmShareholderStatus], bigint, bigint],
+    AgmSearchResult
+  >,
+  'agmSearchShareholdersSecure' : ActorMethod<
+    [string, string, string, [] | [AgmShareholderStatus], bigint, bigint],
+    { 'ok' : AgmSearchResult } | { 'err' : string }
+  >,
+  'agmGetAllRegistrations' : ActorMethod<[string], Array<AgmRegistration>>,
+  'agmGetAllCheckIns' : ActorMethod<[string], Array<AgmCheckIn>>,
+  'agmGetDashboardMetrics' : ActorMethod<[string, bigint], AgmDashboardMetrics>,
+  'agmCreateImportBatch' : ActorMethod<[string, string, string, bigint], AgmImportBatch>,
+  'agmGetImportBatches' : ActorMethod<[string], Array<AgmImportBatch>>,
+  'agmBulkCreateShareholders' : ActorMethod<
+    [string, Array<AgmShareholderInput>, string],
+    AgmBulkCreateResult
+  >,
+  'agmUpdateImportBatchStatus' : ActorMethod<
+    [string, string, AgmImportStatus, bigint, bigint],
+    { 'ok' : AgmImportBatch } | { 'err' : string }
+  >,
+  'agmRegisterShareholder' : ActorMethod<
+    [string, string, AgmRegistrationType, [] | [AgmProxyData], string],
+    { 'ok' : AgmRegistration } | { 'err' : string }
+  >,
+  'agmGetRegistrationByShareholder' : ActorMethod<[string, string], [] | [AgmRegistration]>,
+  'agmUpdateRegistration' : ActorMethod<
+    [string, string, AgmRegistrationUpdate, string],
+    { 'ok' : AgmRegistration } | { 'err' : string }
+  >,
+  'agmCancelRegistration' : ActorMethod<
+    [string, string, string, string],
+    { 'ok' : null } | { 'err' : string }
+  >,
+  'agmUndoCheckIn' : ActorMethod<
+    [string, string, string],
+    { 'ok' : null } | { 'err' : string }
+  >,
+  'agmUpdateShareholderContact' : ActorMethod<
+    [string, string, [] | [string], string, string],
+    { 'ok' : AgmShareholder } | { 'err' : string }
+  >,
+  'agmCheckInShareholder' : ActorMethod<
+    [string, string, string, AgmCheckInMethod, string],
+    { 'ok' : AgmCheckIn } | { 'err' : string }
+  >,
+  'agmGetAuditLog' : ActorMethod<
+    [string, [] | [string], [] | [string], bigint],
+    Array<AgmAuditEntry>
+  >,
   'logout' : ActorMethod<[], undefined>,
   'markAllNotificationsRead' : ActorMethod<[], undefined>,
   'markNotificationRead' : ActorMethod<[bigint], boolean>,

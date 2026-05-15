@@ -1,4 +1,6 @@
 import { withBase } from "./app-base";
+import { createActor } from "@/backend";
+import { createActorWithConfig } from "@caffeineai/core-infrastructure";
 
 /**
  * Typed API client for the Bawjiase Staff Portal backend.
@@ -11,6 +13,21 @@ import {
   BRANCHES,
   DEPARTMENTS,
 } from "../types";
+import type { MappedRow } from "./agm-import-utils";
+import { buildRegistrationNotes } from "./agm-registration-utils";
+import {
+  AGM_BRANCH_OPTIONS,
+  AGM_SHAREHOLDERS,
+  AGM_SUMMARY,
+  type AgmBoardHighlight,
+  type AgmBranchTurnout,
+  type AgmImportBatchRecord,
+  type AgmOperatorActivityRecord,
+  type AgmRecentRegistration,
+  type AgmRegistrationType,
+  type AgmSettingsRecord,
+  type AgmShareholderRecord,
+} from "./agm-module";
 import type {
   Announcement,
   AnnouncementWithPoll,
@@ -46,9 +63,15 @@ const TRAINING_VIDEOS_STORE_KEY = "bcb_training_videos_cache";
 const TRAINING_DOCUMENTS_STORE_KEY = "bcb_training_documents_cache";
 const NOTIFICATIONS_STORE_KEY = "bcb_notifications_cache";
 const AUDIT_LOGS_STORE_KEY = "bcb_audit_logs_cache";
+const AGM_SHAREHOLDERS_STORE_KEY = "bcb_agm_shareholders_cache";
+const AGM_IMPORT_BATCHES_STORE_KEY = "bcb_agm_import_batches_cache";
+const AGM_SETTINGS_STORE_KEY = "bcb_agm_settings_cache";
+const AGM_OPERATOR_ACTIVITY_STORE_KEY = "bcb_agm_operator_activity_cache";
+const AGM_AUTH_STORAGE_KEY = "bcb_agm_auth_session";
 const USERS_UPDATED_EVENT = "bcb:users-updated";
 export const ANNOUNCEMENTS_UPDATED_EVENT = "bcb:announcements-updated";
 export const FORMS_UPDATED_EVENT = "bcb:forms-updated";
+export const AGM_UPDATED_EVENT = "bcb:agm-updated";
 const OPTIONAL_API_TIMEOUT_MS = 8000;
 const SESSION_EXPIRED_EVENT = "bcb:session-expired";
 const ENABLE_SEEDED_FALLBACK =
@@ -172,6 +195,11 @@ function persistContentCache<T>(key: string, items: T[]) {
   } catch {
     // ignore storage failures
   }
+}
+
+function dispatchAgmUpdated() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(AGM_UPDATED_EVENT));
 }
 
 export function apiGetActivityLog(): ActivityLogEntry[] {
@@ -354,6 +382,191 @@ function deserializeScopeList(raw: unknown, fallback: string[] = []): string[] {
     .map((item) => String(item ?? "").trim().toUpperCase())
     .filter(Boolean);
   return normalized.length > 0 ? normalized : [...fallback];
+}
+
+function deserializeAgmRegistrationType(raw: unknown): AgmRegistrationType {
+  if (raw === "In Person" || raw === "Proxy" || raw === "Not Registered") {
+    return raw;
+  }
+  return "Not Registered";
+}
+
+function deserializeAgmShareholder(
+  raw: Record<string, unknown>,
+): AgmShareholderRecord {
+  return {
+    id: String(raw.id ?? `agm-${Date.now()}`),
+    fullName: String(raw.fullName ?? ""),
+    shareholderNumber: String(raw.shareholderNumber ?? "").trim().toUpperCase(),
+    branch: String(raw.branch ?? ""),
+    shareholding: Number(raw.shareholding ?? 0),
+    phone: String(raw.phone ?? ""),
+    ghanaCardId: String(raw.ghanaCardId ?? "").trim().toUpperCase(),
+    registrationType: deserializeAgmRegistrationType(raw.registrationType),
+    verificationCode: String(raw.verificationCode ?? ""),
+    registeredBy: String(raw.registeredBy ?? ""),
+    registeredAt:
+      raw.registeredAt == null || raw.registeredAt === ""
+        ? null
+        : String(raw.registeredAt),
+    checkedInAt:
+      raw.checkedInAt == null || raw.checkedInAt === ""
+        ? null
+        : String(raw.checkedInAt),
+    proxyName:
+      raw.proxyName == null || raw.proxyName === ""
+        ? undefined
+        : String(raw.proxyName),
+    proxyPhone:
+      raw.proxyPhone == null || raw.proxyPhone === ""
+        ? undefined
+        : String(raw.proxyPhone),
+  };
+}
+
+function deserializeAgmImportBatch(
+  raw: Record<string, unknown>,
+): AgmImportBatchRecord {
+  return {
+    id: String(raw.id ?? `agm-batch-${Date.now()}`),
+    filename: String(raw.filename ?? ""),
+    branch: String(raw.branch ?? ""),
+    importedAt: String(raw.importedAt ?? new Date().toISOString()),
+    importedRows: Number(raw.importedRows ?? 0),
+    duplicateRows: Number(raw.duplicateRows ?? 0),
+    errorRows: Number(raw.errorRows ?? 0),
+    status:
+      raw.status === "Completed With Issues"
+        ? "Completed With Issues"
+        : "Completed",
+    operatorName: String(raw.operatorName ?? "AGM Operator"),
+  };
+}
+
+function deserializeAgmSettings(raw: Record<string, unknown>): AgmSettingsRecord {
+  return {
+    agmName: String(raw.agmName ?? AGM_SUMMARY.agmName),
+    venue: String(raw.venue ?? AGM_SUMMARY.venue),
+    agmDate: String(raw.agmDate ?? AGM_SUMMARY.agmDate),
+    quorumRequiredPct: Number(raw.quorumRequiredPct ?? AGM_SUMMARY.quorumRequiredPct),
+  };
+}
+
+function deserializeAgmOperatorActivity(
+  raw: Record<string, unknown>,
+): AgmOperatorActivityRecord {
+  return {
+    id: String(raw.id ?? `agm-activity-${Date.now()}`),
+    operatorName: String(raw.operatorName ?? "AGM Operator"),
+    action: String(raw.action ?? "Updated AGM"),
+    target: String(raw.target ?? "AGM Workspace"),
+    branch: String(raw.branch ?? "Head Office"),
+    timestamp: String(raw.timestamp ?? new Date().toISOString()),
+  };
+}
+
+let agmActorPromise: Promise<ReturnType<typeof createActor> | null> | null = null;
+
+async function getAgmActor(): Promise<ReturnType<typeof createActor> | null> {
+  if (!agmActorPromise) {
+    agmActorPromise = createActorWithConfig(createActor).catch(() => null);
+  }
+  return agmActorPromise;
+}
+
+function getStoredAgmSessionToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(AGM_AUTH_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { token?: string };
+    return typeof parsed.token === "string" && parsed.token.trim().length > 0
+      ? parsed.token
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function getStoredAgmYear(): string {
+  if (typeof window === "undefined") return AGM_ACTIVE_YEAR;
+  try {
+    return window.localStorage.getItem("bcb_agm_active_year") ?? AGM_ACTIVE_YEAR;
+  } catch {
+    return AGM_ACTIVE_YEAR;
+  }
+}
+
+function unwrapAgmResult<T>(result: unknown): T {
+  if (!result || typeof result !== "object") {
+    throw new Error("AGM backend request failed");
+  }
+  const record = result as Record<string, unknown>;
+  if ("err" in record && typeof record.err === "string") {
+    throw new Error(record.err);
+  }
+  if ("ok" in record) {
+    return record.ok as T;
+  }
+  throw new Error("AGM backend request failed");
+}
+
+function agmVariantKey(value: unknown): string {
+  if (!value || typeof value !== "object") return "";
+  return Object.keys(value as Record<string, unknown>)[0] ?? "";
+}
+
+function agmOptionalText(value: unknown): string | undefined {
+  if (Array.isArray(value)) {
+    return typeof value[0] === "string" ? value[0] : undefined;
+  }
+  return typeof value === "string" ? value : undefined;
+}
+
+function agmTimestampToIso(value: unknown): string | null {
+  if (typeof value === "bigint") {
+    return new Date(Number(value / 1_000_000n)).toISOString();
+  }
+  if (typeof value === "number") {
+    return new Date(value).toISOString();
+  }
+  return null;
+}
+
+const AGM_BRANCH_LABELS: Record<string, string> = {
+  HEADOFFICE: "Head Office",
+  HEAD_OFFICE: "Head Office",
+  BAWJIASE: "Bawjiase",
+  ADEISO: "Adeiso",
+  OFAAKOR: "Ofaakor",
+  KASOAMAIN: "Kasoa Main",
+  KASOA_MAIN: "Kasoa Main",
+  KASOANEWMARKET: "Kasoa New Market",
+  KASOA_NEW_MARKET: "Kasoa New Market",
+};
+
+function normalizeAgmBranchLabel(value: string): string {
+  const normalized = value.replace(/[^a-z0-9]/gi, "").toUpperCase();
+  return AGM_BRANCH_LABELS[normalized] ?? value;
+}
+
+function buildAgmBranchTag(branch: string): string {
+  return `branch:${normalizeAgmBranchLabel(branch)}`;
+}
+
+function extractAgmBranch(tags: string[]): string {
+  for (const tag of tags) {
+    const normalized = tag.trim();
+    if (!normalized) continue;
+    if (normalized.toLowerCase().startsWith("branch:")) {
+      return normalizeAgmBranchLabel(normalized.slice(7).trim());
+    }
+    const direct = normalizeAgmBranchLabel(normalized);
+    if (AGM_BRANCH_OPTIONS.includes(direct as (typeof AGM_BRANCH_OPTIONS)[number])) {
+      return direct;
+    }
+  }
+  return "Head Office";
 }
 
 function deserializeUser(user: WireUser): User {
@@ -3912,6 +4125,997 @@ export async function apiClearAllAmendments(): Promise<ApiResult<null>> {
   await delay(300);
   _amendments.splice(0, _amendments.length);
   return ok(null);
+}
+
+// AGM Import / Shareholders
+const _agmShareholders: AgmShareholderRecord[] = loadContentCache(
+  AGM_SHAREHOLDERS_STORE_KEY,
+  AGM_SHAREHOLDERS,
+  deserializeAgmShareholder,
+);
+const _agmImportBatches: AgmImportBatchRecord[] = loadContentCache(
+  AGM_IMPORT_BATCHES_STORE_KEY,
+  [],
+  deserializeAgmImportBatch,
+);
+const _agmSettings: AgmSettingsRecord = (() => {
+  if (typeof window === "undefined") {
+    return {
+      agmName: AGM_SUMMARY.agmName,
+      venue: AGM_SUMMARY.venue,
+      agmDate: AGM_SUMMARY.agmDate,
+      quorumRequiredPct: AGM_SUMMARY.quorumRequiredPct,
+    };
+  }
+  try {
+    const raw = window.localStorage.getItem(AGM_SETTINGS_STORE_KEY);
+    if (!raw) {
+      return {
+        agmName: AGM_SUMMARY.agmName,
+        venue: AGM_SUMMARY.venue,
+        agmDate: AGM_SUMMARY.agmDate,
+        quorumRequiredPct: AGM_SUMMARY.quorumRequiredPct,
+      };
+    }
+    return deserializeAgmSettings(JSON.parse(raw) as Record<string, unknown>);
+  } catch {
+    return {
+      agmName: AGM_SUMMARY.agmName,
+      venue: AGM_SUMMARY.venue,
+      agmDate: AGM_SUMMARY.agmDate,
+      quorumRequiredPct: AGM_SUMMARY.quorumRequiredPct,
+    };
+  }
+})();
+const _agmOperatorActivity: AgmOperatorActivityRecord[] = loadContentCache(
+  AGM_OPERATOR_ACTIVITY_STORE_KEY,
+  [],
+  deserializeAgmOperatorActivity,
+);
+
+function persistAgmSettings() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(AGM_SETTINGS_STORE_KEY, JSON.stringify(_agmSettings));
+  } catch {
+    // ignore storage failures
+  }
+}
+
+function recordAgmOperatorActivity(
+  operatorName: string,
+  action: string,
+  target: string,
+  branch: string,
+) {
+  const entry: AgmOperatorActivityRecord = {
+    id: `agm-activity-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+    operatorName,
+    action,
+    target,
+    branch,
+    timestamp: new Date().toISOString(),
+  };
+  _agmOperatorActivity.unshift(entry);
+  persistContentCache(AGM_OPERATOR_ACTIVITY_STORE_KEY, _agmOperatorActivity);
+}
+
+function mapAgmStatusToRegistrationType(status: unknown): AgmRegistrationType {
+  switch (agmVariantKey(status)) {
+    case "RegisteredInPerson":
+      return "In Person";
+    case "RegisteredProxy":
+      return "Proxy";
+    default:
+      return "Not Registered";
+  }
+}
+
+function mapAgmImportStatus(status: unknown): AgmImportBatchRecord["status"] {
+  return agmVariantKey(status) === "Complete"
+    ? "Completed"
+    : "Completed With Issues";
+}
+
+function syncAgmShareholderCache(records: AgmShareholderRecord[]) {
+  _agmShareholders.splice(0, _agmShareholders.length, ...records);
+  persistContentCache(AGM_SHAREHOLDERS_STORE_KEY, _agmShareholders);
+}
+
+function mapAgmShareholdersFromState(
+  shareholders: Array<Record<string, unknown>>,
+  registrations: Array<Record<string, unknown>>,
+  checkIns: Array<Record<string, unknown>>,
+): AgmShareholderRecord[] {
+  const registrationByShareholder = new Map(
+    registrations.map((item) => [String(item.shareholderId ?? ""), item]),
+  );
+  const checkInByShareholder = new Map(
+    checkIns.map((item) => [String(item.shareholderId ?? ""), item]),
+  );
+
+  return shareholders
+    .map((item) => {
+      const id = String(item.id ?? "");
+      const registration = registrationByShareholder.get(id);
+      const checkIn = checkInByShareholder.get(id);
+      const branch = extractAgmBranch(
+        Array.isArray(item.tags) ? item.tags.map((tag) => String(tag)) : [],
+      );
+      return {
+        id,
+        fullName: String(item.fullName ?? ""),
+        shareholderNumber: String(item.shareholderNumber ?? "").trim().toUpperCase(),
+        branch,
+        shareholding:
+          typeof item.shareholding === "bigint"
+            ? Number(item.shareholding)
+            : Number(item.shareholding ?? 0),
+        phone:
+          agmOptionalText(registration?.proxyContact) ??
+          agmOptionalText(item.phone) ??
+          "",
+        ghanaCardId: String(item.idNumber ?? "").trim().toUpperCase(),
+        registrationType:
+          agmVariantKey(item.status) === "CheckedIn"
+            ? agmVariantKey(registration?.registrationType) === "Proxy"
+              ? "Proxy"
+              : "In Person"
+            : mapAgmStatusToRegistrationType(item.status),
+        verificationCode: String(registration?.verificationCode ?? ""),
+        registeredBy: String(registration?.registeredBy ?? ""),
+        registeredAt: agmTimestampToIso(registration?.registeredAt),
+        checkedInAt: agmTimestampToIso(checkIn?.checkedInAt),
+        proxyName: agmOptionalText(registration?.proxyName),
+        proxyPhone: agmOptionalText(registration?.proxyContact),
+      };
+    })
+    .sort((a, b) => a.fullName.localeCompare(b.fullName));
+}
+
+async function fetchLiveAgmShareholders(): Promise<AgmShareholderRecord[] | null> {
+  const actor = await getAgmActor();
+  if (!actor) return null;
+  try {
+    const activeYear = getStoredAgmYear();
+    const [shareholders, registrations, checkIns] = await Promise.all([
+      actor.agmGetAllShareholders(activeYear),
+      actor.agmGetAllRegistrations(activeYear),
+      actor.agmGetAllCheckIns(activeYear),
+    ]);
+    const mapped = mapAgmShareholdersFromState(
+      shareholders as Array<Record<string, unknown>>,
+      registrations as Array<Record<string, unknown>>,
+      checkIns as Array<Record<string, unknown>>,
+    );
+    syncAgmShareholderCache(mapped);
+    return mapped;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchLiveAgmSettings(): Promise<AgmSettingsRecord | null> {
+  const actor = await getAgmActor();
+  if (!actor) return null;
+  try {
+    const settings = await actor.agmGetSettings(getStoredAgmYear());
+    const mapped: AgmSettingsRecord = {
+      agmName: String(settings.agmName ?? AGM_SUMMARY.agmName),
+      venue: String(settings.venue ?? AGM_SUMMARY.venue),
+      agmDate: String(settings.agmDate ?? AGM_SUMMARY.agmDate),
+      quorumRequiredPct:
+        typeof settings.quorumThreshold === "bigint"
+          ? Number(settings.quorumThreshold)
+          : Number(settings.quorumThreshold ?? AGM_SUMMARY.quorumRequiredPct),
+    };
+    _agmSettings.agmName = mapped.agmName;
+    _agmSettings.venue = mapped.venue;
+    _agmSettings.agmDate = mapped.agmDate;
+    _agmSettings.quorumRequiredPct = mapped.quorumRequiredPct;
+    persistAgmSettings();
+    return mapped;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchLiveAgmImportBatches(): Promise<AgmImportBatchRecord[] | null> {
+  const actor = await getAgmActor();
+  if (!actor) return null;
+  try {
+    const batches = await actor.agmGetImportBatches(getStoredAgmYear());
+    const metaById = new Map(_agmImportBatches.map((item) => [item.id, item]));
+    const mapped = (batches as Array<Record<string, unknown>>)
+      .map((item) => {
+        const cached = metaById.get(String(item.id ?? ""));
+        return {
+          id: String(item.id ?? ""),
+          filename: String(item.filename ?? ""),
+          branch: cached?.branch ?? "Head Office",
+          importedAt: agmTimestampToIso(item.uploadedAt) ?? new Date().toISOString(),
+          importedRows:
+            typeof item.importedRows === "bigint"
+              ? Number(item.importedRows)
+              : Number(item.importedRows ?? 0),
+          duplicateRows:
+            typeof item.duplicatesSkipped === "bigint"
+              ? Number(item.duplicatesSkipped)
+              : Number(item.duplicatesSkipped ?? 0),
+          errorRows: cached?.errorRows ?? 0,
+          status: mapAgmImportStatus(item.status),
+          operatorName: String(item.uploadedBy ?? cached?.operatorName ?? "AGM Operator"),
+        } satisfies AgmImportBatchRecord;
+      })
+      .sort((a, b) => b.importedAt.localeCompare(a.importedAt));
+    _agmImportBatches.splice(0, _agmImportBatches.length, ...mapped);
+    persistContentCache(AGM_IMPORT_BATCHES_STORE_KEY, _agmImportBatches);
+    return mapped;
+  } catch {
+    return null;
+  }
+}
+
+export async function apiGetAgmShareholders(): Promise<AgmShareholderRecord[]> {
+  const live = await fetchLiveAgmShareholders();
+  if (live) return live;
+  await delay(200);
+  return [..._agmShareholders].sort((a, b) => a.fullName.localeCompare(b.fullName));
+}
+
+export function apiGetCachedAgmShareholders(): AgmShareholderRecord[] {
+  return [..._agmShareholders].sort((a, b) => a.fullName.localeCompare(b.fullName));
+}
+
+export async function apiGetAgmImportBatches(): Promise<AgmImportBatchRecord[]> {
+  const live = await fetchLiveAgmImportBatches();
+  if (live) return live;
+  await delay(200);
+  return [..._agmImportBatches].sort((a, b) =>
+    b.importedAt.localeCompare(a.importedAt),
+  );
+}
+
+export interface AgmImportBatchInput {
+  filename: string;
+  branch: string;
+  rows: MappedRow[];
+  duplicateRows: number;
+  errorRows: number;
+  operatorName: string;
+}
+
+export interface AgmRegistrationInput {
+  shareholderId: string;
+  mode: "in-person" | "proxy";
+  phone: string;
+  ghanaCardId: string;
+  verificationCode: string;
+  chitNumber: string;
+  operatorName: string;
+  proxyName?: string;
+  proxyPhone?: string;
+}
+
+export interface AgmCheckInInput {
+  shareholderId: string;
+  operatorName: string;
+  method?: "manual" | "quick" | "qr";
+}
+
+export interface AgmLiveSummary {
+  agmName: string;
+  venue: string;
+  agmDate: string;
+  quorumRequiredPct: number;
+  totalShareholders: number;
+  registered: number;
+  inPerson: number;
+  proxy: number;
+  checkedIn: number;
+}
+
+export interface AgmOverview {
+  summary: AgmLiveSummary;
+  branchTurnout: AgmBranchTurnout[];
+  recentRegistrations: AgmRecentRegistration[];
+  boardHighlights: AgmBoardHighlight[];
+  attendanceRate: number;
+  registrationRate: number;
+  quorumReached: boolean;
+}
+
+export interface AgmRegistrationCorrectionInput {
+  shareholderId: string;
+  mode: "in-person" | "proxy";
+  phone: string;
+  ghanaCardId: string;
+  verificationCode: string;
+  operatorName: string;
+  proxyName?: string;
+  proxyPhone?: string;
+}
+
+function formatRelativeMinutes(timestamp: string): string {
+  const deltaMs = Math.max(0, Date.now() - new Date(timestamp).getTime());
+  const minutes = Math.max(1, Math.round(deltaMs / 60000));
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} hr ago`;
+  const days = Math.round(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+}
+
+function computeAgmOverview(): AgmOverview {
+  const totalShareholders = _agmShareholders.length;
+  const registeredRecords = _agmShareholders.filter(
+    (record) => record.registrationType !== "Not Registered",
+  );
+  const checkedInRecords = _agmShareholders.filter((record) => Boolean(record.checkedInAt));
+  const inPersonCount = _agmShareholders.filter(
+    (record) => record.registrationType === "In Person",
+  ).length;
+  const proxyCount = _agmShareholders.filter(
+    (record) => record.registrationType === "Proxy",
+  ).length;
+  const registered = registeredRecords.length;
+  const checkedIn = checkedInRecords.length;
+  const attendanceRate =
+    totalShareholders > 0 ? (checkedIn / totalShareholders) * 100 : 0;
+  const registrationRate =
+    totalShareholders > 0 ? (registered / totalShareholders) * 100 : 0;
+  const quorumReached = attendanceRate >= _agmSettings.quorumRequiredPct;
+
+  const branchTurnout: AgmBranchTurnout[] = AGM_BRANCH_OPTIONS.map((branch) => {
+    const branchRecords = _agmShareholders.filter((record) => record.branch === branch);
+    return {
+      branch,
+      registered: branchRecords.filter(
+        (record) => record.registrationType !== "Not Registered",
+      ).length,
+      checkedIn: branchRecords.filter((record) => Boolean(record.checkedInAt)).length,
+    };
+  });
+
+  const recentRegistrations: AgmRecentRegistration[] = [...registeredRecords]
+    .filter((record) => record.registeredAt)
+    .sort(
+      (a, b) =>
+        new Date(b.registeredAt ?? 0).getTime() -
+        new Date(a.registeredAt ?? 0).getTime(),
+    )
+    .slice(0, 5)
+    .map((record) => ({
+      name: record.fullName,
+      type: record.registrationType === "Proxy" ? "Proxy" : "In Person",
+      branch: record.branch,
+      time: formatRelativeMinutes(record.registeredAt ?? new Date().toISOString()),
+    }));
+
+  const topBranch =
+    [...branchTurnout].sort((a, b) => b.registered - a.registered)[0]?.branch ??
+    "No data";
+
+  const boardHighlights: AgmBoardHighlight[] = [
+    { label: "Attendance rate", value: `${attendanceRate.toFixed(1)}%` },
+    { label: "Quorum status", value: quorumReached ? "Reached" : "Pending" },
+    {
+      label: "Proxy participation",
+      value: registered > 0 ? `${((proxyCount / registered) * 100).toFixed(1)}%` : "0.0%",
+    },
+    { label: "Top branch turnout", value: topBranch },
+  ];
+
+  return {
+    summary: {
+      agmName: _agmSettings.agmName,
+      venue: _agmSettings.venue,
+      agmDate: _agmSettings.agmDate,
+      quorumRequiredPct: _agmSettings.quorumRequiredPct,
+      totalShareholders,
+      registered,
+      inPerson: inPersonCount,
+      proxy: proxyCount,
+      checkedIn,
+    },
+    branchTurnout,
+    recentRegistrations,
+    boardHighlights,
+    attendanceRate,
+    registrationRate,
+    quorumReached,
+  };
+}
+
+export async function apiImportAgmShareholderBatch(
+  input: AgmImportBatchInput,
+): Promise<AgmImportBatchRecord> {
+  const actor = await getAgmActor();
+  const token = getStoredAgmSessionToken();
+  if (actor && token) {
+    const activeYear = getStoredAgmYear();
+    const batch = await actor.agmCreateImportBatch(
+      activeYear,
+      input.filename,
+      token,
+      BigInt(input.rows.length),
+    );
+    const bulkResult = await actor.agmBulkCreateShareholders(
+      activeYear,
+      input.rows.map((row) => ({
+        shareholderNumber: row.shareholderNumber.trim().toUpperCase(),
+        fullName: row.fullName.trim(),
+        idNumber: row.idNumber.trim().toUpperCase(),
+        email: row.email.trim() ? [row.email.trim()] : [],
+        phone: row.phone.trim() ? [row.phone.trim()] : [],
+        shareholding: BigInt(Math.max(0, Math.round(row.shareholding))),
+        tags: [buildAgmBranchTag(input.branch)],
+      })),
+      token,
+    );
+
+    const duplicateRows =
+      Number(bulkResult.duplicates ?? 0n) + input.duplicateRows;
+    const statusVariant = input.errorRows > 0 ? { Failed: null } : { Complete: null };
+    const updatedBatch = unwrapAgmResult<Record<string, unknown>>(
+      await actor.agmUpdateImportBatchStatus(
+        activeYear,
+        String(batch.id ?? ""),
+        statusVariant,
+        BigInt(Number(bulkResult.created ?? 0n)),
+        BigInt(Number(bulkResult.duplicates ?? 0n)),
+      ),
+    );
+
+    const mapped: AgmImportBatchRecord = {
+      id: String(updatedBatch.id ?? batch.id ?? ""),
+      filename: String(updatedBatch.filename ?? input.filename),
+      branch: input.branch,
+      importedAt:
+        agmTimestampToIso(updatedBatch.uploadedAt ?? batch.uploadedAt) ??
+        new Date().toISOString(),
+      importedRows:
+        typeof updatedBatch.importedRows === "bigint"
+          ? Number(updatedBatch.importedRows)
+          : Number(updatedBatch.importedRows ?? bulkResult.created ?? 0),
+      duplicateRows,
+      errorRows: input.errorRows,
+      status:
+        duplicateRows > 0 || input.errorRows > 0
+          ? "Completed With Issues"
+          : "Completed",
+      operatorName: String(updatedBatch.uploadedBy ?? input.operatorName),
+    };
+
+    _agmImportBatches.unshift(mapped);
+    persistContentCache(AGM_IMPORT_BATCHES_STORE_KEY, _agmImportBatches);
+    await fetchLiveAgmShareholders();
+    dispatchAgmUpdated();
+    apiRecordActivity(
+      "AGM Import Completed",
+      `${mapped.importedRows} shareholder records imported from ${input.filename} for ${input.branch}.`,
+    );
+    return mapped;
+  }
+
+  await delay(350);
+  const seenNumbers = new Set(
+    _agmShareholders.map((record) => record.shareholderNumber.toUpperCase()),
+  );
+  const importedAt = new Date().toISOString();
+  let runtimeDuplicates = 0;
+  const nextRecords: AgmShareholderRecord[] = [];
+
+  for (const row of input.rows) {
+    const shareholderNumber = row.shareholderNumber.trim().toUpperCase();
+    if (!shareholderNumber || seenNumbers.has(shareholderNumber)) {
+      runtimeDuplicates += 1;
+      continue;
+    }
+    seenNumbers.add(shareholderNumber);
+    nextRecords.push({
+      id: `agm-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+      fullName: row.fullName.trim(),
+      shareholderNumber,
+      branch: input.branch,
+      shareholding: Math.max(0, Math.round(row.shareholding)),
+      phone: row.phone.trim(),
+      ghanaCardId: row.idNumber.trim().toUpperCase(),
+      registrationType: "Not Registered",
+      verificationCode: "",
+      registeredBy: "",
+      registeredAt: null,
+      checkedInAt: null,
+    });
+  }
+
+  _agmShareholders.push(...nextRecords);
+  persistContentCache(AGM_SHAREHOLDERS_STORE_KEY, _agmShareholders);
+
+  const batch: AgmImportBatchRecord = {
+    id: `agm-batch-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+    filename: input.filename,
+    branch: input.branch,
+    importedAt,
+    importedRows: nextRecords.length,
+    duplicateRows: input.duplicateRows + runtimeDuplicates,
+    errorRows: input.errorRows,
+    status:
+      input.duplicateRows + runtimeDuplicates > 0 || input.errorRows > 0
+        ? "Completed With Issues"
+        : "Completed",
+    operatorName: input.operatorName,
+  };
+  _agmImportBatches.unshift(batch);
+  persistContentCache(AGM_IMPORT_BATCHES_STORE_KEY, _agmImportBatches);
+  dispatchAgmUpdated();
+
+  apiRecordActivity(
+    "AGM Import Completed",
+    `${batch.importedRows} shareholder records imported from ${input.filename} for ${input.branch}.`,
+  );
+  await apiLogAction(
+    input.operatorName,
+    "AGM_IMPORT_BATCH",
+    `${input.filename} (${input.branch})`,
+    "127.0.0.1",
+  );
+
+  return batch;
+}
+
+export async function apiGetAgmOverview(): Promise<AgmOverview> {
+  await Promise.all([fetchLiveAgmSettings(), fetchLiveAgmShareholders()]);
+  await delay(200);
+  return computeAgmOverview();
+}
+
+export async function apiGetAgmSettings(): Promise<AgmSettingsRecord> {
+  const live = await fetchLiveAgmSettings();
+  if (live) return live;
+  await delay(120);
+  return { ..._agmSettings };
+}
+
+export async function apiUpdateAgmSettings(
+  input: AgmSettingsRecord,
+  operatorName: string,
+): Promise<AgmSettingsRecord> {
+  const actor = await getAgmActor();
+  const token = getStoredAgmSessionToken();
+  if (actor && token) {
+    const updated = unwrapAgmResult<Record<string, unknown>>(
+      await actor.agmUpdateSettings(getStoredAgmYear(), token, {
+        agmName: input.agmName.trim() || AGM_SUMMARY.agmName,
+        venue: input.venue.trim() || AGM_SUMMARY.venue,
+        agmDate: input.agmDate.trim() || AGM_SUMMARY.agmDate,
+        quorumThreshold: BigInt(
+          Math.max(
+            1,
+            Math.min(100, Math.round(input.quorumRequiredPct || AGM_SUMMARY.quorumRequiredPct)),
+          ),
+        ),
+        sessionTimeoutMinutes: 30n,
+      }),
+    );
+    _agmSettings.agmName = String(updated.agmName ?? AGM_SUMMARY.agmName);
+    _agmSettings.venue = String(updated.venue ?? AGM_SUMMARY.venue);
+    _agmSettings.agmDate = String(updated.agmDate ?? AGM_SUMMARY.agmDate);
+    _agmSettings.quorumRequiredPct =
+      typeof updated.quorumThreshold === "bigint"
+        ? Number(updated.quorumThreshold)
+        : Number(updated.quorumThreshold ?? AGM_SUMMARY.quorumRequiredPct);
+    persistAgmSettings();
+    recordAgmOperatorActivity(
+      operatorName,
+      "Updated AGM settings",
+      _agmSettings.agmName,
+      "Head Office",
+    );
+    dispatchAgmUpdated();
+    return { ..._agmSettings };
+  }
+
+  await delay(180);
+  _agmSettings.agmName = input.agmName.trim() || AGM_SUMMARY.agmName;
+  _agmSettings.venue = input.venue.trim() || AGM_SUMMARY.venue;
+  _agmSettings.agmDate = input.agmDate.trim() || AGM_SUMMARY.agmDate;
+  _agmSettings.quorumRequiredPct = Math.max(
+    1,
+    Math.min(100, Math.round(input.quorumRequiredPct || AGM_SUMMARY.quorumRequiredPct)),
+  );
+  persistAgmSettings();
+  recordAgmOperatorActivity(operatorName, "Updated AGM settings", _agmSettings.agmName, "Head Office");
+  apiRecordActivity(
+    "AGM Settings Updated",
+    `${operatorName} updated AGM settings for ${_agmSettings.agmName}.`,
+  );
+  dispatchAgmUpdated();
+  return { ..._agmSettings };
+}
+
+export async function apiGetAgmOperatorActivity(): Promise<AgmOperatorActivityRecord[]> {
+  const actor = await getAgmActor();
+  if (actor) {
+    try {
+      const entries = await actor.agmGetAuditLog(getStoredAgmYear(), [], [], 20n);
+      const mapped = (entries as Array<Record<string, unknown>>)
+        .map((entry) => ({
+          id: String(entry.id ?? ""),
+          operatorName: String(entry.performedBy ?? "AGM Operator"),
+          action: String(entry.action ?? "AGM Action"),
+          target: String(entry.entityId ?? entry.entityType ?? "AGM Workspace"),
+          branch: "Head Office",
+          timestamp: agmTimestampToIso(entry.performedAt) ?? new Date().toISOString(),
+        }))
+        .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+      _agmOperatorActivity.splice(0, _agmOperatorActivity.length, ...mapped);
+      persistContentCache(AGM_OPERATOR_ACTIVITY_STORE_KEY, _agmOperatorActivity);
+      return mapped;
+    } catch {
+      // fallback below
+    }
+  }
+  await delay(120);
+  return [..._agmOperatorActivity].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+}
+
+export async function apiResetAgmVerificationCode(
+  shareholderId: string,
+  operatorName: string,
+): Promise<AgmShareholderRecord> {
+  const actor = await getAgmActor();
+  const token = getStoredAgmSessionToken();
+  if (actor && token) {
+    const activeYear = getStoredAgmYear();
+    const registration = await actor.agmGetRegistrationByShareholder(activeYear, shareholderId);
+    const registrationRecord = Array.isArray(registration)
+      ? (registration[0] as Record<string, unknown> | undefined)
+      : (registration as Record<string, unknown> | null);
+    if (!registrationRecord?.id) {
+      throw new Error("No live AGM registration was found for this shareholder.");
+    }
+    const nextCode = `AGM-${Math.floor(1000 + Math.random() * 9000)}`;
+    unwrapAgmResult(
+      await actor.agmUpdateRegistration(
+        activeYear,
+        String(registrationRecord.id),
+        {
+          notes: [],
+          proxyData: [],
+          verificationCode: [nextCode],
+        },
+        token,
+      ),
+    );
+    const records = await fetchLiveAgmShareholders();
+    const updated = records?.find((item) => item.id === shareholderId);
+    if (!updated) {
+      throw new Error("The verification code was reset but the live record could not be refreshed.");
+    }
+    dispatchAgmUpdated();
+    return updated;
+  }
+
+  await delay(150);
+  const record = _agmShareholders.find((item) => item.id === shareholderId);
+  if (!record) {
+    throw new Error("The selected AGM shareholder could not be found.");
+  }
+  const resetCode = `AGM-${Math.floor(1000 + Math.random() * 9000)}`;
+  record.verificationCode = resetCode;
+  persistContentCache(AGM_SHAREHOLDERS_STORE_KEY, _agmShareholders);
+  recordAgmOperatorActivity(operatorName, "Reset verification code", record.fullName, record.branch);
+  apiRecordActivity(
+    "AGM Verification Reset",
+    `${operatorName} reset the AGM verification code for ${record.fullName}.`,
+  );
+  dispatchAgmUpdated();
+  return { ...record };
+}
+
+export async function apiReopenAgmRegistration(
+  shareholderId: string,
+  operatorName: string,
+): Promise<AgmShareholderRecord> {
+  const actor = await getAgmActor();
+  const token = getStoredAgmSessionToken();
+  if (actor && token) {
+    const activeYear = getStoredAgmYear();
+    const registration = await actor.agmGetRegistrationByShareholder(activeYear, shareholderId);
+    const registrationRecord = Array.isArray(registration)
+      ? (registration[0] as Record<string, unknown> | undefined)
+      : (registration as Record<string, unknown> | null);
+    if (!registrationRecord?.id) {
+      throw new Error("No live AGM registration was found for this shareholder.");
+    }
+    const shareholderRecords = await fetchLiveAgmShareholders();
+    const current = shareholderRecords?.find((item) => item.id === shareholderId);
+    if (current?.checkedInAt) {
+      await actor.agmUndoCheckIn(activeYear, shareholderId, token);
+    }
+    unwrapAgmResult(
+      await actor.agmCancelRegistration(
+        activeYear,
+        String(registrationRecord.id),
+        token,
+        "Reopened by AGM admin",
+      ),
+    );
+    const records = await fetchLiveAgmShareholders();
+    const updated = records?.find((item) => item.id === shareholderId);
+    if (!updated) {
+      throw new Error("The AGM registration was reopened but the live record could not be refreshed.");
+    }
+    dispatchAgmUpdated();
+    return updated;
+  }
+
+  await delay(180);
+  const record = _agmShareholders.find((item) => item.id === shareholderId);
+  if (!record) {
+    throw new Error("The selected AGM shareholder could not be found.");
+  }
+  record.registrationType = "Not Registered";
+  record.verificationCode = "";
+  record.registeredBy = "";
+  record.registeredAt = null;
+  record.checkedInAt = null;
+  record.proxyName = undefined;
+  record.proxyPhone = undefined;
+  persistContentCache(AGM_SHAREHOLDERS_STORE_KEY, _agmShareholders);
+  recordAgmOperatorActivity(operatorName, "Reopened registration", record.fullName, record.branch);
+  apiRecordActivity(
+    "AGM Registration Reopened",
+    `${operatorName} reopened AGM registration for ${record.fullName}.`,
+  );
+  dispatchAgmUpdated();
+  return { ...record };
+}
+
+export async function apiCorrectAgmRegistration(
+  input: AgmRegistrationCorrectionInput,
+): Promise<AgmShareholderRecord> {
+  const actor = await getAgmActor();
+  const token = getStoredAgmSessionToken();
+  if (actor && token) {
+    const activeYear = getStoredAgmYear();
+    const registration = await actor.agmGetRegistrationByShareholder(activeYear, input.shareholderId);
+    const registrationRecord = Array.isArray(registration)
+      ? (registration[0] as Record<string, unknown> | undefined)
+      : (registration as Record<string, unknown> | null);
+    if (!registrationRecord?.id) {
+      throw new Error("No live AGM registration was found for this shareholder.");
+    }
+    unwrapAgmResult(
+      await actor.agmUpdateShareholderContact(
+        activeYear,
+        input.shareholderId,
+        input.phone.trim() ? [input.phone.trim()] : [],
+        input.ghanaCardId.trim().toUpperCase(),
+        token,
+      ),
+    );
+    unwrapAgmResult(
+      await actor.agmUpdateRegistration(
+        activeYear,
+        String(registrationRecord.id),
+        {
+          notes: [],
+          registrationType: [input.mode === "proxy" ? { Proxy: null } : { InPerson: null }],
+          verificationCode: [input.verificationCode.trim()],
+          proxyData:
+            input.mode === "proxy"
+              ? [
+                  {
+                    proxyName: input.proxyName?.trim() || "Proxy Representative",
+                    proxyContact: input.proxyPhone?.trim() || input.phone.trim(),
+                    proxyProofKey: [],
+                  },
+                ]
+              : [],
+        },
+        token,
+      ),
+    );
+    const records = await fetchLiveAgmShareholders();
+    const updated = records?.find((item) => item.id === input.shareholderId);
+    if (!updated) {
+      throw new Error("The AGM registration was corrected but the live record could not be refreshed.");
+    }
+    dispatchAgmUpdated();
+    return updated;
+  }
+
+  await delay(180);
+  const record = _agmShareholders.find((item) => item.id === input.shareholderId);
+  if (!record) {
+    throw new Error("The selected AGM shareholder could not be found.");
+  }
+  record.registrationType = input.mode === "proxy" ? "Proxy" : "In Person";
+  record.phone = input.phone.trim();
+  record.ghanaCardId = input.ghanaCardId.trim().toUpperCase();
+  record.verificationCode = input.verificationCode.trim();
+  record.proxyName =
+    input.mode === "proxy" ? input.proxyName?.trim() || undefined : undefined;
+  record.proxyPhone =
+    input.mode === "proxy" ? input.proxyPhone?.trim() || undefined : undefined;
+  persistContentCache(AGM_SHAREHOLDERS_STORE_KEY, _agmShareholders);
+  recordAgmOperatorActivity(
+    input.operatorName,
+    "Corrected registration",
+    record.fullName,
+    record.branch,
+  );
+  apiRecordActivity(
+    "AGM Registration Corrected",
+    `${input.operatorName} corrected AGM registration for ${record.fullName}.`,
+  );
+  dispatchAgmUpdated();
+  return { ...record };
+}
+
+export async function apiRegisterAgmShareholder(
+  input: AgmRegistrationInput,
+): Promise<AgmShareholderRecord> {
+  const actor = await getAgmActor();
+  const token = getStoredAgmSessionToken();
+  if (actor && token) {
+    const activeYear = getStoredAgmYear();
+    unwrapAgmResult<Record<string, unknown>>(
+      await actor.agmRegisterShareholder(
+        activeYear,
+        input.shareholderId,
+        input.mode === "proxy" ? { Proxy: null } : { InPerson: null },
+        input.mode === "proxy"
+          ? [
+              {
+                proxyName: input.proxyName?.trim() || "Proxy Representative",
+                proxyContact: input.proxyPhone?.trim() || input.phone.trim(),
+                proxyProofKey: [],
+              },
+            ]
+          : [],
+        token,
+      ),
+    );
+    await actor.agmUpdateShareholderContact(
+      activeYear,
+      input.shareholderId,
+      input.phone.trim() ? [input.phone.trim()] : [],
+      input.ghanaCardId.trim().toUpperCase(),
+      token,
+    );
+    const registration = await actor.agmGetRegistrationByShareholder(activeYear, input.shareholderId);
+    const registrationRecord = Array.isArray(registration)
+      ? (registration[0] as Record<string, unknown> | undefined)
+      : (registration as Record<string, unknown> | null);
+    if (registrationRecord?.id) {
+      await actor.agmUpdateRegistration(
+        activeYear,
+        String(registrationRecord.id),
+        {
+          notes: [buildRegistrationNotes([
+            ["AGM Year", getStoredAgmYear()],
+            ["Attendance Type", input.mode === "in-person" ? "In Person" : "Proxy"],
+            ["Contact Number", input.phone.trim()],
+            ["Ghana Card ID Number", input.ghanaCardId.trim().toUpperCase()],
+            ["Verification Code", input.verificationCode.trim()],
+            ["Chit Number", input.chitNumber.trim()],
+          ])],
+          registrationType: [input.mode === "proxy" ? { Proxy: null } : { InPerson: null }],
+          verificationCode: [input.verificationCode.trim()],
+          proxyData:
+            input.mode === "proxy"
+              ? [
+                  {
+                    proxyName: input.proxyName?.trim() || "Proxy Representative",
+                    proxyContact: input.proxyPhone?.trim() || input.phone.trim(),
+                    proxyProofKey: [],
+                  },
+                ]
+              : [],
+        },
+        token,
+      );
+    }
+    const records = await fetchLiveAgmShareholders();
+    const updated = records?.find((item) => item.id === input.shareholderId);
+    if (!updated) {
+      throw new Error("The AGM registration was saved but could not be refreshed.");
+    }
+    dispatchAgmUpdated();
+    apiRecordActivity(
+      "AGM Registration Completed",
+      `${updated.fullName} registered as ${updated.registrationType} for AGM ${updated.branch}.`,
+    );
+    return updated;
+  }
+
+  await delay(250);
+  const record = _agmShareholders.find((item) => item.id === input.shareholderId);
+  if (!record) {
+    throw new Error("The selected AGM shareholder could not be found.");
+  }
+
+  const timestamp = new Date().toISOString();
+  record.phone = input.phone.trim();
+  record.ghanaCardId = input.ghanaCardId.trim().toUpperCase();
+  record.registrationType = input.mode === "proxy" ? "Proxy" : "In Person";
+  record.verificationCode = input.verificationCode.trim();
+  record.registeredBy = input.operatorName.trim() || "AGM Operator";
+  record.registeredAt = timestamp;
+  record.checkedInAt = timestamp;
+  record.proxyName =
+    input.mode === "proxy" ? input.proxyName?.trim() || undefined : undefined;
+  record.proxyPhone =
+    input.mode === "proxy" ? input.proxyPhone?.trim() || undefined : undefined;
+
+  persistContentCache(AGM_SHAREHOLDERS_STORE_KEY, _agmShareholders);
+  dispatchAgmUpdated();
+
+  apiRecordActivity(
+    "AGM Registration Completed",
+    `${record.fullName} registered as ${record.registrationType} for AGM ${record.branch}.`,
+  );
+  await apiLogAction(
+    record.registeredBy,
+    "AGM_REGISTER_SHAREHOLDER",
+    `${record.fullName} (${input.chitNumber.trim()})`,
+    "127.0.0.1",
+  );
+
+  return { ...record };
+}
+
+export async function apiCheckInAgmShareholder(
+  input: AgmCheckInInput,
+): Promise<AgmShareholderRecord> {
+  const actor = await getAgmActor();
+  const token = getStoredAgmSessionToken();
+  if (actor && token) {
+    const activeYear = getStoredAgmYear();
+    const registration = await actor.agmGetRegistrationByShareholder(activeYear, input.shareholderId);
+    const registrationRecord = Array.isArray(registration)
+      ? (registration[0] as Record<string, unknown> | undefined)
+      : (registration as Record<string, unknown> | null);
+    if (!registrationRecord?.id) {
+      throw new Error("No completed AGM registration was found for this shareholder.");
+    }
+    unwrapAgmResult(
+      await actor.agmCheckInShareholder(
+        activeYear,
+        input.shareholderId,
+        String(registrationRecord.id),
+        input.method === "qr"
+          ? { QRScan: null }
+          : input.method === "quick"
+            ? { ManualQuick: null }
+            : { Manual: null },
+        token,
+      ),
+    );
+    const records = await fetchLiveAgmShareholders();
+    const updated = records?.find((item) => item.id === input.shareholderId);
+    if (!updated) {
+      throw new Error("The AGM check-in was saved but the live record could not be refreshed.");
+    }
+    dispatchAgmUpdated();
+    apiRecordActivity(
+      "AGM Check-In Completed",
+      `${updated.fullName} checked in for AGM ${updated.branch}.`,
+    );
+    return updated;
+  }
+
+  const localRecord = _agmShareholders.find((item) => item.id === input.shareholderId);
+  if (!localRecord) {
+    throw new Error("The selected AGM shareholder could not be found.");
+  }
+  localRecord.checkedInAt = new Date().toISOString();
+  persistContentCache(AGM_SHAREHOLDERS_STORE_KEY, _agmShareholders);
+  dispatchAgmUpdated();
+  return { ...localRecord };
 }
 
 export function apiExportIncidentsCsv(incidents: IncidentReport[]): string {

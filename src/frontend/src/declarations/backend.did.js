@@ -24,6 +24,152 @@ export const UserRole = IDL.Variant({
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
+export const AgmUserRole = IDL.Variant({
+  'Viewer' : IDL.Null,
+  'RegistrationOfficer' : IDL.Null,
+  'ReportsViewer' : IDL.Null,
+  'BoardViewer' : IDL.Null,
+  'Admin' : IDL.Null,
+  'SuperAdmin' : IDL.Null,
+});
+export const AgmLoginResponse = IDL.Record({
+  'token' : IDL.Text,
+  'username' : IDL.Text,
+  'role' : AgmUserRole,
+  'mustChangePassword' : IDL.Bool,
+});
+export const AgmSession = IDL.Record({
+  'token' : IDL.Text,
+  'expiresAt' : IDL.Int,
+  'username' : IDL.Text,
+  'role' : AgmUserRole,
+});
+export const AgmShareholderStatus = IDL.Variant({
+  'CheckedIn' : IDL.Null,
+  'NotRegistered' : IDL.Null,
+  'RegisteredInPerson' : IDL.Null,
+  'RegisteredProxy' : IDL.Null,
+});
+export const AgmShareholderInput = IDL.Record({
+  'email' : IDL.Opt(IDL.Text),
+  'fullName' : IDL.Text,
+  'idNumber' : IDL.Text,
+  'phone' : IDL.Opt(IDL.Text),
+  'shareholderNumber' : IDL.Text,
+  'shareholding' : IDL.Nat,
+  'tags' : IDL.Vec(IDL.Text),
+});
+export const AgmShareholder = IDL.Record({
+  'email' : IDL.Opt(IDL.Text),
+  'fullName' : IDL.Text,
+  'id' : IDL.Text,
+  'idNumber' : IDL.Text,
+  'importedAt' : IDL.Int,
+  'importedBy' : IDL.Text,
+  'phone' : IDL.Opt(IDL.Text),
+  'shareholderNumber' : IDL.Text,
+  'shareholding' : IDL.Nat,
+  'status' : AgmShareholderStatus,
+  'tags' : IDL.Vec(IDL.Text),
+});
+export const AgmSearchResult = IDL.Record({
+  'items' : IDL.Vec(AgmShareholder),
+  'page' : IDL.Nat,
+  'total' : IDL.Nat,
+});
+export const AgmRegistrationType = IDL.Variant({
+  'InPerson' : IDL.Null,
+  'Proxy' : IDL.Null,
+});
+export const AgmProxyData = IDL.Record({
+  'proxyContact' : IDL.Text,
+  'proxyName' : IDL.Text,
+  'proxyProofKey' : IDL.Opt(IDL.Text),
+});
+export const AgmRegistration = IDL.Record({
+  'id' : IDL.Text,
+  'notes' : IDL.Opt(IDL.Text),
+  'proxyContact' : IDL.Opt(IDL.Text),
+  'proxyFraudFlags' : IDL.Vec(IDL.Text),
+  'proxyName' : IDL.Opt(IDL.Text),
+  'proxyProofKey' : IDL.Opt(IDL.Text),
+  'proxyProofValidated' : IDL.Bool,
+  'registeredAt' : IDL.Int,
+  'registeredBy' : IDL.Text,
+  'registrationType' : AgmRegistrationType,
+  'shareholderId' : IDL.Text,
+  'updatedAt' : IDL.Int,
+  'updatedBy' : IDL.Opt(IDL.Text),
+  'verificationCode' : IDL.Text,
+});
+export const AgmRegistrationUpdate = IDL.Record({
+  'notes' : IDL.Opt(IDL.Text),
+  'proxyData' : IDL.Opt(AgmProxyData),
+  'registrationType' : IDL.Opt(AgmRegistrationType),
+  'verificationCode' : IDL.Opt(IDL.Text),
+});
+export const AgmCheckInMethod = IDL.Variant({
+  'Manual' : IDL.Null,
+  'ManualQuick' : IDL.Null,
+  'QRScan' : IDL.Null,
+});
+export const AgmCheckIn = IDL.Record({
+  'checkedInAt' : IDL.Int,
+  'checkedInBy' : IDL.Text,
+  'id' : IDL.Text,
+  'method' : AgmCheckInMethod,
+  'registrationId' : IDL.Text,
+  'shareholderId' : IDL.Text,
+});
+export const AgmBulkCreateResult = IDL.Record({
+  'created' : IDL.Nat,
+  'duplicates' : IDL.Nat,
+  'errors' : IDL.Vec(IDL.Text),
+});
+export const AgmImportStatus = IDL.Variant({
+  'Complete' : IDL.Null,
+  'Failed' : IDL.Null,
+  'Pending' : IDL.Null,
+  'Processing' : IDL.Null,
+});
+export const AgmImportBatch = IDL.Record({
+  'duplicatesSkipped' : IDL.Nat,
+  'filename' : IDL.Text,
+  'id' : IDL.Text,
+  'importedRows' : IDL.Nat,
+  'status' : AgmImportStatus,
+  'totalRows' : IDL.Nat,
+  'uploadedAt' : IDL.Int,
+  'uploadedBy' : IDL.Text,
+});
+export const AgmDashboardMetrics = IDL.Record({
+  'attendanceRate' : IDL.Float64,
+  'checkedIn' : IDL.Nat,
+  'lastUpdated' : IDL.Int,
+  'notRegistered' : IDL.Nat,
+  'quorumStatus' : IDL.Bool,
+  'registered' : IDL.Nat,
+  'registeredInPerson' : IDL.Nat,
+  'registeredProxy' : IDL.Nat,
+  'totalShareholders' : IDL.Nat,
+});
+export const AgmSettings = IDL.Record({
+  'agmDate' : IDL.Text,
+  'agmName' : IDL.Text,
+  'quorumThreshold' : IDL.Nat,
+  'sessionTimeoutMinutes' : IDL.Nat,
+  'venue' : IDL.Text,
+});
+export const AgmAuditEntry = IDL.Record({
+  'action' : IDL.Text,
+  'details' : IDL.Text,
+  'entityId' : IDL.Text,
+  'entityType' : IDL.Text,
+  'id' : IDL.Text,
+  'ipAddress' : IDL.Opt(IDL.Text),
+  'performedAt' : IDL.Int,
+  'performedBy' : IDL.Text,
+});
 export const ExternalBlob = IDL.Vec(IDL.Nat8);
 export const AnnouncementCategory = IDL.Variant({
   'HR' : IDL.Null,
@@ -648,9 +794,116 @@ export const idlFactory = ({ IDL }) => {
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'logAction' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Text], [], []),
     'logAnnouncementDownload' : IDL.Func([IDL.Nat], [], []),
-    'login' : IDL.Func(
-        [IDL.Text, IDL.Text],
-        [IDL.Variant({ 'ok' : User, 'err' : IDL.Text })],
+  'login' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [IDL.Variant({ 'ok' : User, 'err' : IDL.Text })],
+      [],
+    ),
+  'agmGetSettings' : IDL.Func([IDL.Text], [AgmSettings], ['query']),
+  'agmUpdateSettings' : IDL.Func(
+      [IDL.Text, IDL.Text, AgmSettings],
+      [IDL.Variant({ 'ok' : AgmSettings, 'err' : IDL.Text })],
+      [],
+    ),
+  'agmGetAllShareholders' : IDL.Func([IDL.Text], [IDL.Vec(AgmShareholder)], ['query']),
+  'agmGetAllShareholdersSecure' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Vec(AgmShareholder), 'err' : IDL.Text })],
+      [],
+    ),
+  'agmSearchShareholders' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Opt(AgmShareholderStatus), IDL.Nat, IDL.Nat],
+      [AgmSearchResult],
+      ['query'],
+    ),
+  'agmSearchShareholdersSecure' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Opt(AgmShareholderStatus), IDL.Nat, IDL.Nat],
+      [IDL.Variant({ 'ok' : AgmSearchResult, 'err' : IDL.Text })],
+      [],
+    ),
+  'agmGetAllRegistrations' : IDL.Func([IDL.Text], [IDL.Vec(AgmRegistration)], ['query']),
+  'agmGetAllCheckIns' : IDL.Func([IDL.Text], [IDL.Vec(AgmCheckIn)], ['query']),
+  'agmGetDashboardMetrics' : IDL.Func([IDL.Text, IDL.Nat], [AgmDashboardMetrics], ['query']),
+  'agmCreateImportBatch' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Nat],
+      [AgmImportBatch],
+      [],
+    ),
+  'agmGetImportBatches' : IDL.Func([IDL.Text], [IDL.Vec(AgmImportBatch)], ['query']),
+  'agmBulkCreateShareholders' : IDL.Func(
+      [IDL.Text, IDL.Vec(AgmShareholderInput), IDL.Text],
+      [AgmBulkCreateResult],
+      [],
+    ),
+  'agmUpdateImportBatchStatus' : IDL.Func(
+      [IDL.Text, IDL.Text, AgmImportStatus, IDL.Nat, IDL.Nat],
+      [IDL.Variant({ 'ok' : AgmImportBatch, 'err' : IDL.Text })],
+      [],
+    ),
+  'agmRegisterShareholder' : IDL.Func(
+      [IDL.Text, IDL.Text, AgmRegistrationType, IDL.Opt(AgmProxyData), IDL.Text],
+      [IDL.Variant({ 'ok' : AgmRegistration, 'err' : IDL.Text })],
+      [],
+    ),
+  'agmGetRegistrationByShareholder' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [IDL.Opt(AgmRegistration)],
+      ['query'],
+    ),
+  'agmUpdateRegistration' : IDL.Func(
+      [IDL.Text, IDL.Text, AgmRegistrationUpdate, IDL.Text],
+      [IDL.Variant({ 'ok' : AgmRegistration, 'err' : IDL.Text })],
+      [],
+    ),
+  'agmCancelRegistration' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
+    ),
+  'agmUndoCheckIn' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
+    ),
+  'agmUpdateShareholderContact' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Opt(IDL.Text), IDL.Text, IDL.Text],
+      [IDL.Variant({ 'ok' : AgmShareholder, 'err' : IDL.Text })],
+      [],
+    ),
+  'agmCheckInShareholder' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, AgmCheckInMethod, IDL.Text],
+      [IDL.Variant({ 'ok' : AgmCheckIn, 'err' : IDL.Text })],
+      [],
+    ),
+  'agmGetAuditLog' : IDL.Func(
+      [IDL.Text, IDL.Opt(IDL.Text), IDL.Opt(IDL.Text), IDL.Nat],
+      [IDL.Vec(AgmAuditEntry)],
+      ['query'],
+    ),
+  'agmLogin' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [IDL.Variant({ 'ok' : AgmLoginResponse, 'err' : IDL.Text })],
+      [],
+    ),
+    'agmValidateSession' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : AgmSession, 'err' : IDL.Text })],
+        [],
+      ),
+    'agmLogout' : IDL.Func([IDL.Text], [], []),
+    'agmChangePassword' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
+      ),
+    'agmChangePasswordSecure' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
+      ),
+    'agmResetPasswordWithCode' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
         [],
       ),
     'logout' : IDL.Func([], [], []),

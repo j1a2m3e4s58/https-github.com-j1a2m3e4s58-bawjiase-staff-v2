@@ -361,6 +361,27 @@ export interface backendInterface {
         __kind__: "err";
         err: string;
     }>;
+    agmGetSettings(): Promise<any>;
+    agmUpdateSettings(token: string, settings: any): Promise<any>;
+    agmGetAllShareholders(): Promise<any>;
+    agmGetAllShareholdersSecure(token: string): Promise<any>;
+    agmSearchShareholders(query: string, statusFilter: any, page: bigint, pageSize: bigint): Promise<any>;
+    agmSearchShareholdersSecure(token: string, query: string, statusFilter: any, page: bigint, pageSize: bigint): Promise<any>;
+    agmGetAllRegistrations(): Promise<any>;
+    agmGetAllCheckIns(): Promise<any>;
+    agmGetDashboardMetrics(quorumThreshold: bigint): Promise<any>;
+    agmCreateImportBatch(filename: string, uploadedBy: string, totalRows: bigint): Promise<any>;
+    agmGetImportBatches(): Promise<any>;
+    agmBulkCreateShareholders(items: any[], importedBy: string): Promise<any>;
+    agmUpdateImportBatchStatus(id: string, status: any, importedRows: bigint, duplicates: bigint): Promise<any>;
+    agmRegisterShareholder(shareholderId: string, regType: any, proxyData: any, registeredBy: string): Promise<any>;
+    agmGetRegistrationByShareholder(shareholderId: string): Promise<any>;
+    agmUpdateRegistration(id: string, updates: any, updatedBy: string): Promise<any>;
+    agmCancelRegistration(id: string, cancelledBy: string, reason: string): Promise<any>;
+    agmUndoCheckIn(shareholderId: string, undoneBy: string): Promise<any>;
+    agmUpdateShareholderContact(id: string, phone: string[] | [], idNumber: string, updatedBy: string): Promise<any>;
+    agmCheckInShareholder(shareholderId: string, registrationId: string, method: any, checkedInBy: string): Promise<any>;
+    agmGetAuditLog(entityType: string[] | [], entityId: string[] | [], limit: bigint): Promise<any>;
     logout(): Promise<void>;
     markAllNotificationsRead(): Promise<void>;
     markNotificationRead(id: bigint): Promise<boolean>;
@@ -975,6 +996,258 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.login(arg0, arg1);
             return from_candid_variant_n55(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async agmGetSettings(): Promise<any> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).agmGetSettings();
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).agmGetSettings();
+        }
+    }
+    async agmUpdateSettings(arg0: string, arg1: any): Promise<any> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).agmUpdateSettings(arg0, arg1);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).agmUpdateSettings(arg0, arg1);
+        }
+    }
+    async agmGetAllShareholders(): Promise<any> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).agmGetAllShareholders();
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).agmGetAllShareholders();
+        }
+    }
+    async agmGetAllShareholdersSecure(arg0: string): Promise<any> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).agmGetAllShareholdersSecure(arg0);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).agmGetAllShareholdersSecure(arg0);
+        }
+    }
+    async agmSearchShareholders(arg0: string, arg1: any, arg2: bigint, arg3: bigint): Promise<any> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).agmSearchShareholders(arg0, arg1, arg2, arg3);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).agmSearchShareholders(arg0, arg1, arg2, arg3);
+        }
+    }
+    async agmSearchShareholdersSecure(arg0: string, arg1: string, arg2: any, arg3: bigint, arg4: bigint): Promise<any> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).agmSearchShareholdersSecure(arg0, arg1, arg2, arg3, arg4);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).agmSearchShareholdersSecure(arg0, arg1, arg2, arg3, arg4);
+        }
+    }
+    async agmGetAllRegistrations(): Promise<any> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).agmGetAllRegistrations();
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).agmGetAllRegistrations();
+        }
+    }
+    async agmGetAllCheckIns(): Promise<any> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).agmGetAllCheckIns();
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).agmGetAllCheckIns();
+        }
+    }
+    async agmGetDashboardMetrics(arg0: bigint): Promise<any> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).agmGetDashboardMetrics(arg0);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).agmGetDashboardMetrics(arg0);
+        }
+    }
+    async agmCreateImportBatch(arg0: string, arg1: string, arg2: bigint): Promise<any> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).agmCreateImportBatch(arg0, arg1, arg2);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).agmCreateImportBatch(arg0, arg1, arg2);
+        }
+    }
+    async agmGetImportBatches(): Promise<any> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).agmGetImportBatches();
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).agmGetImportBatches();
+        }
+    }
+    async agmBulkCreateShareholders(arg0: any[], arg1: string): Promise<any> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).agmBulkCreateShareholders(arg0, arg1);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).agmBulkCreateShareholders(arg0, arg1);
+        }
+    }
+    async agmUpdateImportBatchStatus(arg0: string, arg1: any, arg2: bigint, arg3: bigint): Promise<any> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).agmUpdateImportBatchStatus(arg0, arg1, arg2, arg3);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).agmUpdateImportBatchStatus(arg0, arg1, arg2, arg3);
+        }
+    }
+    async agmRegisterShareholder(arg0: string, arg1: any, arg2: any, arg3: string): Promise<any> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).agmRegisterShareholder(arg0, arg1, arg2, arg3);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).agmRegisterShareholder(arg0, arg1, arg2, arg3);
+        }
+    }
+    async agmGetRegistrationByShareholder(arg0: string): Promise<any> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).agmGetRegistrationByShareholder(arg0);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).agmGetRegistrationByShareholder(arg0);
+        }
+    }
+    async agmUpdateRegistration(arg0: string, arg1: any, arg2: string): Promise<any> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).agmUpdateRegistration(arg0, arg1, arg2);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).agmUpdateRegistration(arg0, arg1, arg2);
+        }
+    }
+    async agmCancelRegistration(arg0: string, arg1: string, arg2: string): Promise<any> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).agmCancelRegistration(arg0, arg1, arg2);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).agmCancelRegistration(arg0, arg1, arg2);
+        }
+    }
+    async agmUndoCheckIn(arg0: string, arg1: string): Promise<any> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).agmUndoCheckIn(arg0, arg1);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).agmUndoCheckIn(arg0, arg1);
+        }
+    }
+    async agmUpdateShareholderContact(arg0: string, arg1: string[] | [], arg2: string, arg3: string): Promise<any> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).agmUpdateShareholderContact(arg0, arg1, arg2, arg3);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).agmUpdateShareholderContact(arg0, arg1, arg2, arg3);
+        }
+    }
+    async agmCheckInShareholder(arg0: string, arg1: string, arg2: any, arg3: string): Promise<any> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).agmCheckInShareholder(arg0, arg1, arg2, arg3);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).agmCheckInShareholder(arg0, arg1, arg2, arg3);
+        }
+    }
+    async agmGetAuditLog(arg0: string[] | [], arg1: string[] | [], arg2: bigint): Promise<any> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).agmGetAuditLog(arg0, arg1, arg2);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).agmGetAuditLog(arg0, arg1, arg2);
         }
     }
     async logout(): Promise<void> {

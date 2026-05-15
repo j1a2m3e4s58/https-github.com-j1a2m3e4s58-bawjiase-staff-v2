@@ -1,6 +1,8 @@
 import { BrandLoader } from "@/components/BrandLoader";
 import { RouteLoadingBar } from "@/components/RouteLoadingBar";
+import { AgmYearProvider } from "@/context/AgmYearContext";
 import { appBasePath, withBase } from "@/lib/app-base";
+import { AgmAuthProvider, useAgmAuth } from "@/store/agm-auth";
 import { AuthProvider, useAuth } from "@/store/auth";
 import {
   Outlet,
@@ -88,6 +90,11 @@ const VerifyEmailPage = lazyPage(
   "verify-email",
   () => import("@/pages/VerifyEmailPage"),
 );
+const AgmLoginPage = lazyPage("agm-login", () => import("@/pages/AgmLoginPage"));
+const AgmChangePasswordPage = lazyPage(
+  "agm-change-password",
+  () => import("@/pages/AgmChangePasswordPage"),
+);
 const DashboardPage = lazyPage("dashboard", () => import("@/pages/DashboardPage"));
 const AnnouncementsPage = lazyPage(
   "announcements",
@@ -110,6 +117,39 @@ const NotificationsPage = lazyPage(
   () => import("@/pages/NotificationsPage"),
 );
 const ProfilePage = lazyPage("profile", () => import("@/pages/ProfilePage"));
+const AgmPortalPage = lazyPage("agm", () => import("@/pages/AgmPortalPage"));
+const AgmDashboardPage = lazyPage(
+  "agm-dashboard",
+  () => import("@/pages/AgmDashboardPage"),
+);
+const AgmBoardViewPage = lazyPage(
+  "agm-board",
+  () => import("@/pages/AgmBoardViewPage"),
+);
+const AgmRegistrationPage = lazyPage(
+  "agm-registration",
+  () => import("@/pages/AgmRegistrationPage"),
+);
+const AgmCheckInPage = lazyPage(
+  "agm-checkin",
+  () => import("@/pages/AgmCheckInPage"),
+);
+const AgmShareholdersPage = lazyPage(
+  "agm-shareholders",
+  () => import("@/pages/AgmShareholdersPage"),
+);
+const AgmReportsPage = lazyPage(
+  "agm-reports",
+  () => import("@/pages/AgmReportsPage"),
+);
+const AgmImportPage = lazyPage(
+  "agm-import",
+  () => import("@/pages/AgmImportPage"),
+);
+const AgmAdminPage = lazyPage(
+  "agm-admin",
+  () => import("@/pages/AgmAdminPage"),
+);
 const TrainingHubPage = lazyPage("training", () => import("@/pages/TrainingHubPage"));
 const TrainingVideoPage = lazyPage(
   "training-video",
@@ -266,6 +306,74 @@ function GuestGuard() {
 
   if (isLoading) return <PageLoading />;
   if (isLoggedIn) return <PageLoading />;
+  return (
+    <Suspense fallback={<PageLoading />}>
+      <Outlet />
+    </Suspense>
+  );
+}
+
+function AgmSessionGuard() {
+  const { isAuthenticated, isLoading, mustChangePassword } = useAgmAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      navigate({ to: "/agm/login", replace: true });
+      return;
+    }
+    if (!isLoading && mustChangePassword) {
+      navigate({ to: "/agm/change-password", replace: true });
+    }
+  }, [isAuthenticated, isLoading, mustChangePassword, navigate]);
+
+  if (isLoading) return <PageLoading />;
+  if (!isAuthenticated || mustChangePassword) return <PageLoading />;
+  return (
+    <Suspense fallback={<PageLoading />}>
+      <Outlet />
+    </Suspense>
+  );
+}
+
+function AgmGuestGuard() {
+  const { isAuthenticated, isLoading, mustChangePassword } = useAgmAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      navigate({
+        to: mustChangePassword ? "/agm/change-password" : "/agm/dashboard",
+        replace: true,
+      });
+    }
+  }, [isAuthenticated, isLoading, mustChangePassword, navigate]);
+
+  if (isLoading) return <PageLoading />;
+  if (isAuthenticated) return <PageLoading />;
+  return (
+    <Suspense fallback={<PageLoading />}>
+      <Outlet />
+    </Suspense>
+  );
+}
+
+function AgmPasswordGuard() {
+  const { isAuthenticated, isLoading, mustChangePassword } = useAgmAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      navigate({ to: "/agm/login", replace: true });
+      return;
+    }
+    if (!isLoading && isAuthenticated && !mustChangePassword) {
+      navigate({ to: "/agm/dashboard", replace: true });
+    }
+  }, [isAuthenticated, isLoading, mustChangePassword, navigate]);
+
+  if (isLoading) return <PageLoading />;
+  if (!isAuthenticated || !mustChangePassword) return <PageLoading />;
   return (
     <Suspense fallback={<PageLoading />}>
       <Outlet />
@@ -463,6 +571,90 @@ const profileRoute = createRoute({
   component: ProfilePage,
 });
 
+const agmGuestRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  id: "agm-guest",
+  component: AgmGuestGuard,
+});
+
+const agmLoginRoute = createRoute({
+  getParentRoute: () => agmGuestRoute,
+  path: "/agm/login",
+  component: AgmLoginPage,
+});
+
+const agmPasswordRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  id: "agm-password",
+  component: AgmPasswordGuard,
+});
+
+const agmChangePasswordRoute = createRoute({
+  getParentRoute: () => agmPasswordRoute,
+  path: "/agm/change-password",
+  component: AgmChangePasswordPage,
+});
+
+const agmProtectedRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  id: "agm-protected",
+  component: AgmSessionGuard,
+});
+
+const agmRoute = createRoute({
+  getParentRoute: () => agmProtectedRoute,
+  path: "/agm",
+  component: AgmPortalPage,
+});
+
+const agmDashboardRoute = createRoute({
+  getParentRoute: () => agmProtectedRoute,
+  path: "/agm/dashboard",
+  component: AgmDashboardPage,
+});
+
+const agmBoardRoute = createRoute({
+  getParentRoute: () => agmProtectedRoute,
+  path: "/agm/board",
+  component: AgmBoardViewPage,
+});
+
+const agmRegistrationRoute = createRoute({
+  getParentRoute: () => agmProtectedRoute,
+  path: "/agm/registration",
+  component: AgmRegistrationPage,
+});
+
+const agmCheckInRoute = createRoute({
+  getParentRoute: () => agmProtectedRoute,
+  path: "/agm/checkin",
+  component: AgmCheckInPage,
+});
+
+const agmShareholdersRoute = createRoute({
+  getParentRoute: () => agmProtectedRoute,
+  path: "/agm/shareholders",
+  component: AgmShareholdersPage,
+});
+
+const agmReportsRoute = createRoute({
+  getParentRoute: () => agmProtectedRoute,
+  path: "/agm/reports",
+  component: AgmReportsPage,
+});
+
+const agmImportRoute = createRoute({
+  getParentRoute: () => agmProtectedRoute,
+  path: "/agm/import",
+  component: AgmImportPage,
+});
+
+const agmAdminRoute = createRoute({
+  getParentRoute: () => agmProtectedRoute,
+  path: "/agm/admin",
+  component: AgmAdminPage,
+});
+
 // ── Router ────────────────────────────────────────────────────────────────────
 
 const routeTree = rootRoute.addChildren([
@@ -497,6 +689,19 @@ const routeTree = rootRoute.addChildren([
     auditRoute,
     backupRoute,
     profileRoute,
+    agmGuestRoute.addChildren([agmLoginRoute]),
+    agmPasswordRoute.addChildren([agmChangePasswordRoute]),
+    agmProtectedRoute.addChildren([
+      agmRoute,
+      agmDashboardRoute,
+      agmBoardRoute,
+      agmRegistrationRoute,
+      agmCheckInRoute,
+      agmShareholdersRoute,
+      agmReportsRoute,
+      agmImportRoute,
+      agmAdminRoute,
+    ]),
   ]),
 ]);
 
@@ -517,10 +722,14 @@ declare module "@tanstack/react-router" {
 export default function App() {
   return (
     <AuthProvider>
-      <FrontendCrashMonitor />
-      <RouterProvider router={router}>
-        <RouteLoadingBar />
-      </RouterProvider>
+      <AgmAuthProvider>
+        <AgmYearProvider>
+          <FrontendCrashMonitor />
+          <RouterProvider router={router}>
+            <RouteLoadingBar />
+          </RouterProvider>
+        </AgmYearProvider>
+      </AgmAuthProvider>
     </AuthProvider>
   );
 }
