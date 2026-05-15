@@ -1,6 +1,5 @@
 import { AgmSubnav } from "@/components/AgmSubnav";
 import { AppShell } from "@/components/AppShell";
-import { PortalCard } from "@/components/PortalCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useAgmYear } from "@/context/AgmYearContext";
 import {
   AGM_UPDATED_EVENT,
+  apiCheckInAgmShareholder,
   apiGetAgmShareholders,
   apiRegisterAgmShareholder,
 } from "@/lib/backend-client";
@@ -18,25 +18,13 @@ import {
   validateGhanaCardId,
   validateGhanaPhone,
 } from "@/lib/agm-registration-utils";
-import {
-  CheckCircle2,
-  Search,
-  ShieldCheck,
-  UserPlus,
-  Users,
-} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { CheckCircle2, Clock3, Search, Upload } from "lucide-react";
 import { useAuth } from "@/store/auth";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type RegistrationMode = "in-person" | "proxy";
-
-interface RegistrationSuccess {
-  shareholderName: string;
-  mode: RegistrationMode;
-  verificationCode: string;
-  notes: string;
-}
 
 interface FormErrors {
   phone?: string;
@@ -47,6 +35,33 @@ interface FormErrors {
   proxyName?: string;
   proxyPhone?: string;
   proxyGhanaCardId?: string;
+}
+
+function formatDeskTimestamp() {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+  }).format(new Date());
+}
+
+function statusLabel(record: AgmShareholderRecord) {
+  if (record.checkedInAt) return "Checked In";
+  if (record.registrationType !== "Not Registered") return "Registered";
+  return "Not Registered";
+}
+
+function statusClasses(record: AgmShareholderRecord) {
+  if (record.checkedInAt) {
+    return "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
+  }
+  if (record.registrationType !== "Not Registered") {
+    return "border-sky-500/30 bg-sky-500/10 text-sky-300";
+  }
+  return "border-border/60 bg-background/40 text-muted-foreground";
 }
 
 function ShareholderListItem({
@@ -62,25 +77,38 @@ function ShareholderListItem({
     <button
       type="button"
       onClick={onSelect}
-      className={`w-full border-b border-border/30 px-4 py-3 text-left transition-smooth last:border-b-0 ${
-        selected
-          ? "bg-primary/15 border-l-2 border-l-primary"
-          : "hover:bg-muted/30"
-      }`}
+      className={cn(
+        "w-full border-b border-border/50 px-4 py-4 text-left transition-smooth last:border-b-0",
+        selected ? "bg-primary/30" : "hover:bg-muted/20",
+      )}
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <div className="min-w-0 space-y-1">
           <div className="font-semibold text-foreground">{shareholder.fullName}</div>
           <div className="text-sm text-muted-foreground">
-            #{shareholder.shareholderNumber}
+            # {shareholder.shareholderNumber}
           </div>
-          <div className="mt-1 text-xs text-muted-foreground">
-            {shareholder.branch} • {shareholder.shareholding.toLocaleString()} shares
+          <div className="text-sm text-muted-foreground">
+            {shareholder.shareholding.toLocaleString()} shares
           </div>
+          {selected ? (
+            <div className="pt-1 text-xs text-primary">
+              Completing current registration...
+            </div>
+          ) : null}
         </div>
-        <Badge variant="outline" className="text-xs">
-          Ready
-        </Badge>
+        <div className="flex flex-col items-end gap-2">
+          <Badge
+            variant="outline"
+            className={cn("h-7 border text-xs font-medium", statusClasses(shareholder))}
+          >
+            <Clock3 className="h-3 w-3" />
+            {statusLabel(shareholder)}
+          </Badge>
+          <span className="inline-flex h-10 items-center border border-primary/60 bg-primary px-4 text-sm font-semibold text-primary-foreground">
+            Register
+          </span>
+        </div>
       </div>
     </button>
   );
@@ -92,46 +120,11 @@ function ErrorText({ message }: { message?: string }) {
 }
 
 export default function AgmRegistrationPage() {
-  const { activeYear } = useAgmYear();
+  const { activeYear, setActiveYear, yearOptions } = useAgmYear();
   const { user } = useAuth();
   const [query, setQuery] = useState("");
   const [shareholders, setShareholders] = useState<AgmShareholderRecord[]>([]);
-  const filtered = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return shareholders;
-    return shareholders.filter((item) =>
-      [
-        item.fullName,
-        item.shareholderNumber,
-        item.branch,
-        item.ghanaCardId,
-        ].some((value) => value.toLowerCase().includes(normalized)),
-    );
-  }, [query, shareholders]);
-
-  useEffect(() => {
-    const load = () => {
-      void apiGetAgmShareholders().then((records) =>
-        setShareholders(
-          records.filter((record) => record.registrationType === "Not Registered"),
-        ),
-      );
-    };
-    load();
-    window.addEventListener(AGM_UPDATED_EVENT, load);
-    return () => {
-      window.removeEventListener(AGM_UPDATED_EVENT, load);
-    };
-  }, []);
-
-  const [selectedId, setSelectedId] = useState<string | null>(
-    filtered[0]?.id ?? null,
-  );
-  const selected =
-    filtered.find((item) => item.id === selectedId) ??
-    filtered[0] ??
-    null;
-
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mode, setMode] = useState<RegistrationMode>("in-person");
   const [phone, setPhone] = useState("");
   const [ghanaCardId, setGhanaCardId] = useState("");
@@ -141,9 +134,35 @@ export default function AgmRegistrationPage() {
   const [proxyName, setProxyName] = useState("");
   const [proxyPhone, setProxyPhone] = useState("");
   const [proxyGhanaCardId, setProxyGhanaCardId] = useState("");
+  const [proxyDocumentName, setProxyDocumentName] = useState("");
+  const [autoCheckInTime, setAutoCheckInTime] = useState(formatDeskTimestamp);
   const [errors, setErrors] = useState<FormErrors>({});
-  const [success, setSuccess] = useState<RegistrationSuccess | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const proxyDocumentRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    const load = () => {
+      void apiGetAgmShareholders().then((records) => {
+        setShareholders(records);
+      });
+    };
+    load();
+    window.addEventListener(AGM_UPDATED_EVENT, load);
+    return () => window.removeEventListener(AGM_UPDATED_EVENT, load);
+  }, [activeYear]);
+
+  const filtered = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return shareholders;
+    return shareholders.filter((item) =>
+      [
+        item.fullName,
+        item.shareholderNumber,
+        item.ghanaCardId,
+        item.phone,
+      ].some((value) => value.toLowerCase().includes(normalized)),
+    );
+  }, [query, shareholders]);
 
   useEffect(() => {
     if (!filtered.find((item) => item.id === selectedId)) {
@@ -151,26 +170,31 @@ export default function AgmRegistrationPage() {
     }
   }, [filtered, selectedId]);
 
+  const selected =
+    filtered.find((item) => item.id === selectedId) ?? filtered[0] ?? null;
+
   function resetForm(shareholder?: AgmShareholderRecord | null) {
-    setMode("in-person");
+    setMode(shareholder?.registrationType === "Proxy" ? "proxy" : "in-person");
     setPhone(shareholder?.phone ?? "");
     setGhanaCardId(shareholder?.ghanaCardId ?? "");
-    setVerificationCode("");
+    setVerificationCode(shareholder?.verificationCode ?? "");
     setChitNumber(shareholder?.shareholderNumber ?? "");
     setConsentChecked(false);
-    setProxyName("");
-    setProxyPhone("");
+    setProxyName(shareholder?.proxyName ?? "");
+    setProxyPhone(shareholder?.proxyPhone ?? shareholder?.phone ?? "");
     setProxyGhanaCardId("");
+    setProxyDocumentName("");
+    setAutoCheckInTime(formatDeskTimestamp());
     setErrors({});
-    setSuccess(null);
   }
 
-  function handleSelectShareholder(shareholder: AgmShareholderRecord) {
-    setSelectedId(shareholder.id);
-    resetForm(shareholder);
-  }
+  useEffect(() => {
+    if (selected) {
+      resetForm(selected);
+    }
+  }, [selectedId]);
 
-  function validateForm(): boolean {
+  function validateForm() {
     const nextErrors: FormErrors = {};
     const normalizedPhone = normalizePhone(phone);
     const trimmedCard = ghanaCardId.trim().toUpperCase();
@@ -182,7 +206,7 @@ export default function AgmRegistrationPage() {
     }
 
     if (!trimmedCard) {
-      nextErrors.ghanaCardId = "Enter the Ghana Card number.";
+      nextErrors.ghanaCardId = "Enter the Ghana Card ID number.";
     } else if (!validateGhanaCardId(trimmedCard)) {
       nextErrors.ghanaCardId = "Use the format GHA-123456789-1.";
     }
@@ -192,7 +216,7 @@ export default function AgmRegistrationPage() {
     }
 
     if (!chitNumber.trim()) {
-      nextErrors.chitNumber = "Enter the member number.";
+      nextErrors.chitNumber = "Enter the chit number.";
     }
 
     if (!consentChecked) {
@@ -201,15 +225,16 @@ export default function AgmRegistrationPage() {
 
     if (mode === "proxy") {
       if (!proxyName.trim()) {
-        nextErrors.proxyName = "Enter the proxy representative name.";
+        nextErrors.proxyName = "Enter the proxy full name.";
       }
-      if (!normalizePhone(proxyPhone)) {
+      const normalizedProxyPhone = normalizePhone(proxyPhone);
+      if (!normalizedProxyPhone) {
         nextErrors.proxyPhone = "Enter the proxy contact number.";
-      } else if (!validateGhanaPhone(normalizePhone(proxyPhone))) {
+      } else if (!validateGhanaPhone(normalizedProxyPhone)) {
         nextErrors.proxyPhone = "Use a valid Ghana phone number.";
       }
       if (!proxyGhanaCardId.trim()) {
-        nextErrors.proxyGhanaCardId = "Enter the proxy Ghana Card number.";
+        nextErrors.proxyGhanaCardId = "Enter the proxy Ghana Card ID number.";
       } else if (!validateGhanaCardId(proxyGhanaCardId.trim().toUpperCase())) {
         nextErrors.proxyGhanaCardId = "Use the format GHA-123456789-1.";
       }
@@ -223,29 +248,11 @@ export default function AgmRegistrationPage() {
     event.preventDefault();
     if (!selected) return;
     if (!validateForm()) {
-      toast.error("Please fix the highlighted AGM registration fields.");
+      toast.error("Please fix the AGM registration fields and try again.");
       return;
     }
 
     setIsSubmitting(true);
-
-    const notes = buildRegistrationNotes([
-      ["AGM Year", activeYear],
-      ["Attendance Type", mode === "in-person" ? "In Person" : "Proxy"],
-      ["Shareholder Name", selected.fullName],
-      ["Contact Number", normalizePhone(phone)],
-      ["Ghana Card ID Number", ghanaCardId.trim().toUpperCase()],
-      ["Verification Code", verificationCode.trim()],
-      ["Chit Number", chitNumber.trim()],
-      ["Consent Accepted", consentChecked ? "Yes" : "No"],
-      ...(mode === "proxy"
-        ? [
-            ["Proxy Name", proxyName.trim()],
-            ["Proxy Contact Number", normalizePhone(proxyPhone)],
-            ["Proxy Ghana Card ID", proxyGhanaCardId.trim().toUpperCase()],
-          ]
-        : []),
-    ]);
 
     try {
       const updated = await apiRegisterAgmShareholder({
@@ -260,14 +267,33 @@ export default function AgmRegistrationPage() {
         proxyPhone: mode === "proxy" ? normalizePhone(proxyPhone) : undefined,
       });
 
-      setShareholders((current) => current.filter((item) => item.id !== updated.id));
-      setSuccess({
-        shareholderName: updated.fullName,
-        mode,
-        verificationCode: updated.verificationCode,
-        notes,
+      const checkedIn = await apiCheckInAgmShareholder({
+        shareholderId: updated.id,
+        operatorName: user?.fullname ?? "AGM Operator",
+        method: "manual",
       });
-      toast.success("AGM registration saved to the live register.");
+
+      const notes = buildRegistrationNotes([
+        ["AGM Year", activeYear],
+        ["Attendance Type", mode === "proxy" ? "Proxy" : "In Person"],
+        ["Shareholder Name", checkedIn.fullName],
+        ["Verification Code", verificationCode.trim()],
+        ["Chit Number", chitNumber.trim()],
+        ["Auto Check-In Time", autoCheckInTime],
+      ]);
+
+      setShareholders((current) =>
+        current.map((item) => (item.id === checkedIn.id ? checkedIn : item)),
+      );
+      setSelectedId(checkedIn.id);
+      toast.success(
+        mode === "proxy"
+          ? "Proxy registration and check-in completed."
+          : "Registration and check-in completed.",
+      );
+      resetForm(checkedIn);
+      setConsentChecked(false);
+      void notes;
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -281,336 +307,326 @@ export default function AgmRegistrationPage() {
 
   return (
     <AppShell>
-      <div className="page-shell space-y-6" data-ocid="agm.registration.page">
+      <div className="page-shell space-y-5" data-ocid="agm.registration.page">
         <AgmSubnav />
 
-        <section className="hero-panel">
-          <div className="hero-panel__content">
-            <div className="page-kicker">Registration Desk</div>
-            <div className="space-y-4">
-              <h1 className="text-4xl font-display font-bold text-foreground sm:text-5xl">
-                AGM {activeYear} Registration
+        <div className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
+          <section className="panel-sharp border border-border/60 bg-card/90">
+            <div className="border-b border-border/50 px-5 py-5">
+              <h1 className="font-display text-3xl font-bold text-foreground">
+                Find Shareholder
               </h1>
-              <p className="max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
-                Search the pending shareholder queue, review identity details,
-                and complete an in-person or proxy registration flow inside the
-                portal.
+              <p className="mt-2 text-sm text-muted-foreground">
+                Registration list for AGM year {activeYear}
               </p>
             </div>
-          </div>
-        </section>
 
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_1.18fr]">
-          <PortalCard
-            elevated
-            title="Pending Shareholders"
-            subtitle={`${filtered.length} shareholders currently ready for registration in AGM ${activeYear}.`}
-            data-ocid="agm.registration.queue.card"
-          >
-            <div className="space-y-4">
+            <div className="space-y-4 px-5 py-5">
+              <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  AGM Year
+                </Label>
+                <select
+                  value={activeYear}
+                  onChange={(event) => setActiveYear(event.target.value)}
+                  className="h-12 w-[84px] border border-border/60 bg-background px-3 text-lg font-semibold text-foreground outline-none transition-smooth focus:border-primary"
+                >
+                  {yearOptions.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search by name, member number, branch, or Ghana Card"
-                  className="h-12 pl-10"
+                  placeholder="Name, shareholder #, or ID..."
+                  className="h-12 border-border/60 bg-background pl-11"
                 />
               </div>
 
-              <div className="panel-sharp overflow-hidden border border-border/40 bg-muted/20">
-                {filtered.length === 0 ? (
-                  <div className="flex min-h-[240px] flex-col items-center justify-center gap-3 px-6 py-10 text-center">
-                    <div className="flex h-12 w-12 items-center justify-center border border-primary/20 bg-primary/10 text-primary">
-                      <Users className="h-5 w-5" />
-                    </div>
-                    <div className="font-display text-lg font-semibold text-foreground">
-                      No shareholder match
-                    </div>
-                    <div className="max-w-sm text-sm text-muted-foreground">
-                      Try a different search term to find a pending shareholder
-                      in the AGM registration queue.
-                    </div>
-                  </div>
-                ) : (
-                  filtered.map((shareholder) => (
-                    <ShareholderListItem
-                      key={shareholder.id}
-                      shareholder={shareholder}
-                      selected={selected?.id === shareholder.id}
-                      onSelect={() => handleSelectShareholder(shareholder)}
-                    />
-                  ))
-                )}
-              </div>
+              <p className="text-sm text-muted-foreground">
+                Showing {filtered.length.toLocaleString()} of{" "}
+                {shareholders.length.toLocaleString()} results. Search still covers all names.
+              </p>
             </div>
-          </PortalCard>
 
-          <PortalCard
-            elevated
-            title={selected ? selected.fullName : "Registration Form"}
-            subtitle={
-              selected
-                ? `Complete the AGM ${activeYear} registration flow for shareholder ${selected.shareholderNumber}.`
-                : "Select a shareholder from the queue to open the registration form."
-            }
-            data-ocid="agm.registration.detail.card"
-          >
+            <div className="max-h-[980px] overflow-y-auto border-t border-border/50">
+              {filtered.map((shareholder) => (
+                <ShareholderListItem
+                  key={shareholder.id}
+                  shareholder={shareholder}
+                  selected={selected?.id === shareholder.id}
+                  onSelect={() => setSelectedId(shareholder.id)}
+                />
+              ))}
+              {filtered.length === 0 ? (
+                <div className="px-5 py-12 text-center text-sm text-muted-foreground">
+                  No shareholders matched this search.
+                </div>
+              ) : null}
+            </div>
+          </section>
+
+          <section className="panel-sharp border border-border/60 bg-card/90 px-6 py-6">
             {!selected ? (
-              <div className="flex min-h-[360px] flex-col items-center justify-center gap-3 text-center">
-                <div className="flex h-12 w-12 items-center justify-center border border-primary/20 bg-primary/10 text-primary">
-                  <UserPlus className="h-5 w-5" />
-                </div>
-                <div className="font-display text-lg font-semibold text-foreground">
-                  Select a shareholder
-                </div>
-                <div className="max-w-sm text-sm text-muted-foreground">
-                  The right panel will switch from preview mode into the actual
-                  AGM registration form once a shareholder is selected.
-                </div>
-              </div>
-            ) : success ? (
-              <div className="space-y-5">
-                <div className="panel-sharp border border-primary/25 bg-primary/10 p-5">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center border border-primary/20 bg-primary/15 text-primary">
-                      <CheckCircle2 className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <div className="font-display text-xl font-bold text-foreground">
-                        Registration Prepared
-                      </div>
-                      <div className="mt-1 text-sm text-muted-foreground">
-                        {success.shareholderName} is ready for{" "}
-                        {success.mode === "in-person" ? "in-person" : "proxy"} AGM registration.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="panel-sharp border border-border/40 bg-muted/20 p-4">
-                    <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      Registration Mode
-                    </div>
-                    <div className="mt-2 font-semibold text-foreground">
-                      {success.mode === "in-person" ? "In Person" : "Proxy"}
-                    </div>
-                  </div>
-                  <div className="panel-sharp border border-border/40 bg-muted/20 p-4">
-                    <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      Verification Code
-                    </div>
-                    <div className="mt-2 font-semibold text-foreground">
-                      {success.verificationCode}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="panel-sharp border border-border/40 bg-background/60 p-4">
-                  <div className="text-xs font-bold uppercase tracking-wider text-foreground">
-                    Registration Notes
-                  </div>
-                  <pre className="mt-3 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
-                    {success.notes}
-                  </pre>
-                </div>
-
-                <div className="flex flex-wrap gap-3">
-                  <Button
-                    className="glass-button h-12 px-5 text-sm font-bold uppercase tracking-[0.14em]"
-                    onClick={() => resetForm(selected)}
-                  >
-                    Register Another Mode
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="h-12 px-5 text-sm font-semibold"
-                    onClick={() => {
-                      setSelectedId(null);
-                      resetForm(null);
-                    }}
-                  >
-                    Back to Queue
-                  </Button>
-                </div>
+              <div className="flex min-h-[420px] items-center justify-center text-muted-foreground">
+                Select a shareholder to continue registration.
               </div>
             ) : (
-              <form className="space-y-5" onSubmit={handleSubmit}>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="panel-sharp border border-border/40 bg-muted/20 p-4">
-                    <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      Shareholder Number
-                    </div>
-                    <div className="mt-2 font-semibold text-foreground">
-                      {selected.shareholderNumber}
-                    </div>
+              <form className="space-y-6" onSubmit={handleSubmit}>
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <h2 className="font-display text-4xl font-bold uppercase tracking-tight text-foreground">
+                      {selected.fullName}
+                    </h2>
+                    <p className="mt-2 text-2xl text-foreground">
+                      # {selected.shareholderNumber} <span className="text-muted-foreground">- {selected.shareholding.toLocaleString()} shares</span>
+                    </p>
                   </div>
-                  <div className="panel-sharp border border-border/40 bg-muted/20 p-4">
-                    <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      Branch
-                    </div>
-                    <div className="mt-2 font-semibold text-foreground">
-                      {selected.branch}
-                    </div>
-                  </div>
+                  <Badge
+                    variant="outline"
+                    className={cn("h-11 border px-4 text-xl font-medium", statusClasses(selected))}
+                  >
+                    <Clock3 className="h-4 w-4" />
+                    {statusLabel(selected)}
+                  </Badge>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <Button
+                <div className="grid grid-cols-2 border border-border/60 bg-background">
+                  <button
                     type="button"
-                    variant={mode === "in-person" ? "default" : "outline"}
-                    className="h-12 justify-start gap-2"
                     onClick={() => setMode("in-person")}
+                    className={cn(
+                      "h-14 text-lg font-medium transition-smooth",
+                      mode === "in-person"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-foreground hover:bg-muted/30",
+                    )}
                   >
-                    <UserPlus className="h-4 w-4" />
-                    In-Person Registration
-                  </Button>
-                  <Button
+                    In Person
+                  </button>
+                  <button
                     type="button"
-                    variant={mode === "proxy" ? "default" : "outline"}
-                    className="h-12 justify-start gap-2"
                     onClick={() => setMode("proxy")}
+                    className={cn(
+                      "h-14 border-l border-border/60 text-lg font-medium transition-smooth",
+                      mode === "proxy"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-foreground hover:bg-muted/30",
+                    )}
                   >
-                    <ShieldCheck className="h-4 w-4" />
-                    Proxy Registration
-                  </Button>
+                    Proxy
+                  </button>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label>AGM Year</Label>
-                    <Input value={activeYear} readOnly className="bg-muted/30" />
+                    <Input value={activeYear} readOnly className="h-12 border-border/60 bg-background" />
                   </div>
                   <div className="space-y-2">
                     <Label>Automatic Check-In Time</Label>
-                    <Input value={new Date().toLocaleString()} readOnly className="bg-muted/30" />
+                    <Input value={autoCheckInTime} readOnly className="h-12 border-border/60 bg-background" />
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="agm-phone">Contact Number</Label>
-                  <Input
-                    id="agm-phone"
-                    value={phone}
-                    onChange={(event) => setPhone(event.target.value)}
-                    placeholder="0241234567"
-                  />
-                  <ErrorText message={errors.phone} />
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="agm-card">Ghana Card ID Number</Label>
-                    <Input
-                      id="agm-card"
-                      value={ghanaCardId}
-                      onChange={(event) =>
-                        setGhanaCardId(event.target.value.toUpperCase())
-                      }
-                      placeholder="GHA-123456789-1"
-                    />
-                    <ErrorText message={errors.ghanaCardId} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="agm-verification">Verification Code</Label>
-                    <Input
-                      id="agm-verification"
-                      value={verificationCode}
-                      onChange={(event) => setVerificationCode(event.target.value)}
-                      placeholder="AGM-2401"
-                    />
-                    <ErrorText message={errors.verificationCode} />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="agm-chit">Chit / Member Number</Label>
-                  <Input
-                    id="agm-chit"
-                    value={chitNumber}
-                    onChange={(event) => setChitNumber(event.target.value)}
-                    placeholder="Member number"
-                  />
-                  <ErrorText message={errors.chitNumber} />
                 </div>
 
                 {mode === "proxy" ? (
-                  <div className="panel-sharp border border-border/40 bg-muted/20 p-4 space-y-4">
-                    <div className="text-xs font-bold uppercase tracking-wider text-foreground">
-                      Proxy Representative
-                    </div>
+                  <>
                     <div className="space-y-2">
-                      <Label htmlFor="proxy-name">Proxy Name</Label>
-                      <Input
-                        id="proxy-name"
-                        value={proxyName}
-                        onChange={(event) => setProxyName(event.target.value)}
-                        placeholder="Full proxy representative name"
+                      <Label>Proxy Nomination Document</Label>
+                      <input
+                        ref={proxyDocumentRef}
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png,.webp"
+                        className="hidden"
+                        onChange={(event) => {
+                          setProxyDocumentName(event.target.files?.[0]?.name ?? "");
+                        }}
                       />
-                      <ErrorText message={errors.proxyName} />
+                      <button
+                        type="button"
+                        onClick={() => proxyDocumentRef.current?.click()}
+                        className="flex min-h-[148px] w-full flex-col items-center justify-center gap-3 border border-dashed border-border/60 bg-background px-6 py-8 text-center transition-smooth hover:border-primary/50"
+                      >
+                        <Upload className="h-10 w-10 text-muted-foreground" />
+                        <div className="text-2xl font-semibold text-foreground">
+                          {proxyDocumentName || "Upload supporting document"}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Optional. PDF, JPEG, PNG, or WEBP up to 10 MB.
+                        </div>
+                      </button>
                     </div>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+
+                    <div className="space-y-2">
+                      <Label>Name of Shareholder</Label>
+                      <Input value={selected.fullName} readOnly className="h-12 border-border/60 bg-background" />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="shareholder-phone">Shareholder Contact Number *</Label>
+                      <Input
+                        id="shareholder-phone"
+                        value={phone}
+                        onChange={(event) => setPhone(event.target.value)}
+                        className="h-12 border-border/60 bg-background"
+                        placeholder="0241234567"
+                      />
+                      <ErrorText message={errors.phone} />
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
-                        <Label htmlFor="proxy-phone">Proxy Contact Number</Label>
+                        <Label htmlFor="proxy-name">Proxy Full Name *</Label>
+                        <Input
+                          id="proxy-name"
+                          value={proxyName}
+                          onChange={(event) => setProxyName(event.target.value)}
+                          className="h-12 border-border/60 bg-background"
+                          placeholder="Enter proxy full name"
+                        />
+                        <ErrorText message={errors.proxyName} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="proxy-phone">Proxy Contact Number *</Label>
                         <Input
                           id="proxy-phone"
                           value={proxyPhone}
                           onChange={(event) => setProxyPhone(event.target.value)}
+                          className="h-12 border-border/60 bg-background"
                           placeholder="0241234567"
                         />
                         <ErrorText message={errors.proxyPhone} />
                       </div>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
-                        <Label htmlFor="proxy-card">Proxy Ghana Card ID</Label>
+                        <Label htmlFor="proxy-card">Proxy Ghana Card ID Number *</Label>
                         <Input
                           id="proxy-card"
                           value={proxyGhanaCardId}
                           onChange={(event) =>
                             setProxyGhanaCardId(event.target.value.toUpperCase())
                           }
+                          className="h-12 border-border/60 bg-background"
                           placeholder="GHA-123456789-1"
                         />
                         <ErrorText message={errors.proxyGhanaCardId} />
                       </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="verification-code-proxy">Verification Code *</Label>
+                        <Input
+                          id="verification-code-proxy"
+                          value={verificationCode}
+                          onChange={(event) => setVerificationCode(event.target.value)}
+                          className="h-12 border-border/60 bg-background"
+                          placeholder="Enter verified code"
+                        />
+                        <ErrorText message={errors.verificationCode} />
+                      </div>
                     </div>
-                  </div>
-                ) : null}
+                  </>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Shareholder Name</Label>
+                      <Input value={selected.fullName} readOnly className="h-12 border-border/60 bg-background" />
+                    </div>
 
-                <label className="panel-sharp flex items-start gap-3 border border-border/40 bg-muted/20 p-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="contact-number">Contact Number *</Label>
+                      <Input
+                        id="contact-number"
+                        value={phone}
+                        onChange={(event) => setPhone(event.target.value)}
+                        className="h-12 border-border/60 bg-background"
+                        placeholder="0241234567"
+                      />
+                      <ErrorText message={errors.phone} />
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="ghana-card">Ghana Card ID Number *</Label>
+                        <Input
+                          id="ghana-card"
+                          value={ghanaCardId}
+                          onChange={(event) => setGhanaCardId(event.target.value.toUpperCase())}
+                          className="h-12 border-border/60 bg-background"
+                          placeholder="GHA-123456789-1"
+                        />
+                        <ErrorText message={errors.ghanaCardId} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="verification-code">Verification Code *</Label>
+                        <Input
+                          id="verification-code"
+                          value={verificationCode}
+                          onChange={(event) => setVerificationCode(event.target.value)}
+                          className="h-12 border-border/60 bg-background"
+                          placeholder="Enter verified code"
+                        />
+                        <ErrorText message={errors.verificationCode} />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="chit-number">Chit Number *</Label>
+                  <Input
+                    id="chit-number"
+                    value={chitNumber}
+                    onChange={(event) => setChitNumber(event.target.value)}
+                    className="h-12 border-border/60 bg-background"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Auto-filled from the uploaded member list.
+                  </p>
+                  <ErrorText message={errors.chitNumber} />
+                </div>
+
+                <label className="flex items-start gap-4 border border-border/60 bg-background px-4 py-5">
                   <input
                     type="checkbox"
                     checked={consentChecked}
                     onChange={(event) => setConsentChecked(event.target.checked)}
-                    className="mt-1 h-4 w-4"
+                    className="mt-1 h-5 w-5"
                   />
-                  <div className="text-sm text-muted-foreground">
-                    I confirm that the identity details, verification code, and
-                    AGM registration information above are correct.
+                  <div>
+                    <div className="text-xl font-semibold text-foreground">
+                      Signature / Consent
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {mode === "proxy"
+                        ? "I confirm that the proxy details entered above are correct and approved for registration."
+                        : "I confirm that the details entered above are correct and approved for registration."}
+                    </p>
                   </div>
                 </label>
                 <ErrorText message={errors.consent} />
 
-                <div className="flex flex-wrap gap-3">
-                  <Button
-                    type="submit"
-                    className="glass-button h-12 px-5 text-sm font-bold uppercase tracking-[0.14em]"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? "Saving Registration..." : "Complete Registration"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-12 px-5 text-sm font-semibold"
-                    onClick={() => resetForm(selected)}
-                  >
-                    Reset Form
-                  </Button>
-                </div>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="h-14 w-full text-xl font-semibold"
+                >
+                  <CheckCircle2 className="mr-2 h-5 w-5" />
+                  {isSubmitting
+                    ? "Saving..."
+                    : mode === "proxy"
+                      ? "Register Proxy and Check In"
+                      : "Register and Check In"}
+                </Button>
               </form>
             )}
-          </PortalCard>
+          </section>
         </div>
       </div>
     </AppShell>
