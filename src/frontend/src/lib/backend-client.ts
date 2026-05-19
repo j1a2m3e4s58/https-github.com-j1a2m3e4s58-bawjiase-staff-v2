@@ -247,6 +247,53 @@ function withCacheBuster(url: string): string {
   return `${url}${separator}_ts=${Date.now()}`;
 }
 
+function isNetworkFetchError(error: unknown): boolean {
+  return error instanceof TypeError;
+}
+
+function getMailApiCandidates(path: string): string[] {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const candidates = new Set<string>();
+  const configured = `${MAIL_API_URL}${normalizedPath}`;
+  candidates.add(configured);
+
+  if (typeof window !== "undefined") {
+    candidates.add(`${window.location.origin}/mail-api/api${normalizedPath}`);
+    candidates.add(`${window.location.origin}/api${normalizedPath}`);
+  }
+
+  if (MAIL_API_ROOT) {
+    candidates.add(`${MAIL_API_ROOT}/api${normalizedPath}`);
+  }
+
+  return Array.from(candidates);
+}
+
+async function requestMailApiResponse(
+  path: string,
+  buildRequest: (url: string, token: string | null) => Promise<Response>,
+): Promise<Response> {
+  const token = getStoredSessionToken();
+  const candidates = getMailApiCandidates(path);
+  let lastError: unknown = null;
+
+  for (let index = 0; index < candidates.length; index += 1) {
+    const candidate = candidates[index];
+    try {
+      return await buildRequest(candidate, token);
+    } catch (error) {
+      lastError = error;
+      if (!isNetworkFetchError(error) || index === candidates.length - 1) {
+        throw error;
+      }
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Authentication service unavailable. Please try again.");
+}
+
 function handleSessionExpired() {
   if (typeof window === "undefined") return;
   try {
@@ -259,15 +306,16 @@ function handleSessionExpired() {
 
 async function postMailApi(path: string, payload: Record<string, unknown>) {
   const response = await withRequestActivity(path, async () => {
-    const token = getStoredSessionToken();
-    return fetch(withSessionToken(`${MAIL_API_URL}${path}`), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify(payload),
-    });
+    return requestMailApiResponse(path, async (url, token) =>
+      fetch(withSessionToken(url), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      }),
+    );
   });
   const data = (await response.json().catch(() => ({}))) as {
     error?: string;
@@ -286,15 +334,16 @@ async function postMailApiJson(
   payload: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
   const response = await withRequestActivity(path, async () => {
-    const token = getStoredSessionToken();
-    return fetch(withSessionToken(`${MAIL_API_URL}${path}`), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify(payload),
-    });
+    return requestMailApiResponse(path, async (url, token) =>
+      fetch(withSessionToken(url), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      }),
+    );
   });
   const data = (await response.json().catch(() => ({}))) as Record<string, unknown> & {
     error?: string;
@@ -311,12 +360,13 @@ async function postMailApiJson(
 
 async function getMailApiJson(path: string): Promise<Record<string, unknown>> {
   const response = await withRequestActivity(path, async () => {
-    const token = getStoredSessionToken();
-    return fetch(withCacheBuster(withSessionToken(`${MAIL_API_URL}${path}`)), {
-      method: "GET",
-      cache: "no-store",
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    });
+    return requestMailApiResponse(path, async (url, token) =>
+      fetch(withCacheBuster(withSessionToken(url)), {
+        method: "GET",
+        cache: "no-store",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      }),
+    );
   });
   const data = (await response.json().catch(() => ({}))) as Record<string, unknown> & {
     error?: string;
@@ -338,12 +388,13 @@ async function uploadMailApiFile(
   const formData = new FormData();
   formData.append("file", file);
   const response = await withRequestActivity(path, async () => {
-    const token = getStoredSessionToken();
-    return fetch(withSessionToken(`${MAIL_API_URL}${path}`), {
-      method: "POST",
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      body: formData,
-    });
+    return requestMailApiResponse(path, async (url, token) =>
+      fetch(withSessionToken(url), {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: formData,
+      }),
+    );
   });
   const data = (await response.json().catch(() => ({}))) as Record<string, unknown> & {
     error?: string;
