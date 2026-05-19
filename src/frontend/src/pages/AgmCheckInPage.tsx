@@ -1,5 +1,4 @@
-import { AgmSubnav } from "@/components/AgmSubnav";
-import { AppShell } from "@/components/AppShell";
+import { AgmLayout } from "@/components/AgmLayout";
 import { PortalCard } from "@/components/PortalCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -111,10 +110,8 @@ export default function AgmCheckInPage() {
   }
 
   return (
-    <AppShell>
+    <AgmLayout>
       <div className="page-shell space-y-6" data-ocid="agm.checkin.page">
-        <AgmSubnav />
-
         <section className="hero-panel">
           <div className="hero-panel__content">
             <div className="page-kicker">Check-In Desk</div>
@@ -280,6 +277,6 @@ export default function AgmCheckInPage() {
           </PortalCard>
         </div>
       </div>
-    </AppShell>
+    </AgmLayout>
   );
 }

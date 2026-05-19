@@ -1,5 +1,4 @@
-import { AgmSubnav } from "@/components/AgmSubnav";
-import { AppShell } from "@/components/AppShell";
+import { AgmLayout } from "@/components/AgmLayout";
 import { useAgmYear } from "@/context/AgmYearContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -229,10 +228,8 @@ export default function AgmDashboardPage() {
   }, [search, shareholders, typeFilter]);
 
   return (
-    <AppShell>
+    <AgmLayout>
       <div className="page-shell space-y-6" data-ocid="agm.dashboard.page">
-        <AgmSubnav />
-
         <section className="panel-sharp-lg border border-border/40 bg-card/70 p-6">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
             <div>
@@ -609,6 +606,6 @@ export default function AgmDashboardPage() {
           </div>
         </section>
       </div>
-    </AppShell>
+    </AgmLayout>
   );
 }

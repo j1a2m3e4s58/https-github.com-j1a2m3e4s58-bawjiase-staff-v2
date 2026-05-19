@@ -1,5 +1,4 @@
-import { AgmSubnav } from "@/components/AgmSubnav";
-import { AppShell } from "@/components/AppShell";
+import { AgmLayout } from "@/components/AgmLayout";
 import { PortalCard } from "@/components/PortalCard";
 import { useAgmYear } from "@/context/AgmYearContext";
 import { Badge } from "@/components/ui/badge";
@@ -100,10 +99,8 @@ export default function AgmReportsPage() {
   }, [checkedIn, filter, pending, query, registered, shareholders]);
 
   return (
-    <AppShell>
+    <AgmLayout>
       <div className="page-shell space-y-6" data-ocid="agm.reports.page">
-        <AgmSubnav />
-
         <section className="hero-panel">
           <div className="hero-panel__content">
             <div className="page-kicker">Reports & Analytics</div>
@@ -304,6 +301,6 @@ export default function AgmReportsPage() {
           </PortalCard>
         </div>
       </div>
-    </AppShell>
+    </AgmLayout>
   );
 }

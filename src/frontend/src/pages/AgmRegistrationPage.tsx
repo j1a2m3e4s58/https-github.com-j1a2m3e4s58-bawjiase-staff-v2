@@ -1,5 +1,4 @@
-import { AgmSubnav } from "@/components/AgmSubnav";
-import { AppShell } from "@/components/AppShell";
+import { AgmLayout } from "@/components/AgmLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -306,10 +305,8 @@ export default function AgmRegistrationPage() {
   }
 
   return (
-    <AppShell>
+    <AgmLayout>
       <div className="page-shell space-y-5" data-ocid="agm.registration.page">
-        <AgmSubnav />
-
         <div className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
           <section className="panel-sharp border border-border/60 bg-card/90">
             <div className="border-b border-border/50 px-5 py-5">
@@ -629,6 +626,6 @@ export default function AgmRegistrationPage() {
           </section>
         </div>
       </div>
-    </AppShell>
+    </AgmLayout>
   );
 }

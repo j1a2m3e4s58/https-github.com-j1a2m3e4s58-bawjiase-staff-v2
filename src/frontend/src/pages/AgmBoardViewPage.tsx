@@ -1,5 +1,4 @@
-import { AgmSubnav } from "@/components/AgmSubnav";
-import { AppShell } from "@/components/AppShell";
+import { AgmLayout } from "@/components/AgmLayout";
 import { PortalCard } from "@/components/PortalCard";
 import { useAgmYear } from "@/context/AgmYearContext";
 import { Badge } from "@/components/ui/badge";
@@ -81,10 +80,8 @@ export default function AgmBoardViewPage() {
   const branchTurnout = overview?.branchTurnout ?? [];
 
   return (
-    <AppShell>
+    <AgmLayout>
       <div className="page-shell space-y-6" data-ocid="agm.board.page">
-        <AgmSubnav />
-
         <section className="hero-panel">
           <div className="hero-panel__content">
             <div className="page-kicker">Board View</div>
@@ -309,6 +306,6 @@ export default function AgmBoardViewPage() {
           </div>
         </PortalCard>
       </div>
-    </AppShell>
+    </AgmLayout>
   );
 }

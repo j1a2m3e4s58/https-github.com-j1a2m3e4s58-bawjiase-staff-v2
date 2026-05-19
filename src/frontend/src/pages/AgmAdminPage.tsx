@@ -1,6 +1,5 @@
-import { AgmSubnav } from "@/components/AgmSubnav";
+import { AgmLayout } from "@/components/AgmLayout";
 import { AgmYearSwitcher } from "@/components/AgmYearSwitcher";
-import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -788,9 +787,8 @@ export default function AgmAdminPage() {
 
   if (session && !isAdminAllowed) {
     return (
-      <AppShell>
+      <AgmLayout>
         <div className="page-shell space-y-6">
-          <AgmSubnav />
           <div
             className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center"
             data-ocid="admin.access_denied"
@@ -807,15 +805,13 @@ export default function AgmAdminPage() {
             </p>
           </div>
         </div>
-      </AppShell>
+      </AgmLayout>
     );
   }
 
   return (
-    <AppShell>
+    <AgmLayout>
       <div data-ocid="admin.page" className="page-shell space-y-6">
-        <AgmSubnav />
-
         <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
           <div className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center">
             <Settings className="w-5 h-5 text-primary" />
@@ -931,6 +927,6 @@ export default function AgmAdminPage() {
           </DialogContent>
         </Dialog>
       </div>
-    </AppShell>
+    </AgmLayout>
   );
 }

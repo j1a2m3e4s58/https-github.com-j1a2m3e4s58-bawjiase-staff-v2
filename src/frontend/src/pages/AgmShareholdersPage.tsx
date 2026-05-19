@@ -1,5 +1,4 @@
-import { AgmSubnav } from "@/components/AgmSubnav";
-import { AppShell } from "@/components/AppShell";
+import { AgmLayout } from "@/components/AgmLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -134,10 +133,8 @@ export default function AgmShareholdersPage() {
   const proxyCount = registeredRecords.filter((item) => item.registrationType === "Proxy").length;
 
   return (
-    <AppShell>
+    <AgmLayout>
       <div className="page-shell space-y-6" data-ocid="agm.shareholders.page">
-        <AgmSubnav />
-
         <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           <SummaryCard label="Registered" value={registeredRecords.length} />
           <SummaryCard label="In Person" value={inPersonCount} />
@@ -329,6 +326,6 @@ export default function AgmShareholdersPage() {
           </div>
         </section>
       </div>
-    </AppShell>
+    </AgmLayout>
   );
 }

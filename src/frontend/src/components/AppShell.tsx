@@ -77,7 +77,7 @@ const NAV_ITEMS: NavItem[] = [
     bottomNav: true,
   },
   {
-    to: "/agm",
+    to: "/agm/dashboard",
     label: "AGM Portal",
     icon: <BriefcaseBusiness className="h-5 w-5" />,
   },
@@ -581,7 +581,7 @@ function DesktopTopNav() {
       icon: <Users className="h-4 w-4" />,
     },
     {
-      to: "/agm",
+      to: "/agm/dashboard",
       label: "AGM Portal",
       icon: <BriefcaseBusiness className="h-4 w-4" />,
     },

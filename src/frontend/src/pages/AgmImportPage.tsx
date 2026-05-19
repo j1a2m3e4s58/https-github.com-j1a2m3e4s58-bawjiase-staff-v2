@@ -1,5 +1,4 @@
-import { AgmSubnav } from "@/components/AgmSubnav";
-import { AppShell } from "@/components/AppShell";
+import { AgmLayout } from "@/components/AgmLayout";
 import { PortalCard } from "@/components/PortalCard";
 import { useAgmYear } from "@/context/AgmYearContext";
 import { Badge } from "@/components/ui/badge";
@@ -396,10 +395,8 @@ export default function AgmImportPage() {
     importHistory.find((item) => item.id === selectedHistoryId) ?? importHistory[0];
 
   return (
-    <AppShell>
+    <AgmLayout>
       <div className="page-shell space-y-6" data-ocid="agm.import.page">
-        <AgmSubnav />
-
         <section className="hero-panel">
           <div className="hero-panel__content">
             <div className="page-kicker">Import Workspace</div>
@@ -1132,6 +1129,6 @@ export default function AgmImportPage() {
           </div>
         </div>
       </div>
-    </AppShell>
+    </AgmLayout>
   );
 }
