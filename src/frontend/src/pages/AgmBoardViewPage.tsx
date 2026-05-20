@@ -1,311 +1,406 @@
-import { AgmLayout } from "@/components/AgmLayout";
-import { PortalCard } from "@/components/PortalCard";
-import { useAgmYear } from "@/context/AgmYearContext";
+import { AgmYearSwitcher } from "@/components/AgmYearSwitcher";
+import { Layout } from "@/components/Layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAgmYear } from "@/context/AgmYearContext";
 import {
-  AGM_UPDATED_EVENT,
-  apiGetAgmOverview,
-  type AgmOverview,
-} from "@/lib/backend-client";
-import { AGM_SUMMARY } from "@/lib/agm-module";
+  useAllCheckIns,
+  useAllRegistrations,
+  useAllShareholders,
+  useRecordAuditEvent,
+  useSettings,
+  RegistrationType,
+} from "@/hooks/use-backend";
 import {
-  Download,
-  Expand,
-  RefreshCw,
-  ShieldCheck,
-  TrendingUp,
-  UserCheck,
-  Users,
-} from "lucide-react";
-import { useEffect, useState } from "react";
+  buildYearScopedShareholders,
+  filterCheckInsByRegistrations,
+  filterRegistrationsByYear,
+} from "@/lib/agm-year";
+import { Download, Expand, RefreshCw, ShieldCheck, TrendingUp, Users, UserCheck } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
-function exportBoardSummaryCsv(overview: AgmOverview, activeYear: string) {
-  const { summary, attendanceRate, quorumReached } = overview;
+function exportBoardCsv(
+  activeYear: string,
+  agmName: string,
+  metrics: Array<[string, string]>,
+) {
   const rows = [
-    ["Metric", "Value"],
     ["AGM Year", activeYear],
-    ["AGM Name", summary.agmName],
-    ["Total Shareholders", summary.totalShareholders.toString()],
-    ["Registered", summary.registered.toString()],
-    ["Checked In", summary.checkedIn.toString()],
-    ["Proxy", summary.proxy.toString()],
-    ["In Person", summary.inPerson.toString()],
-    ["Attendance Rate", `${attendanceRate.toFixed(1)}%`],
-    ["Quorum Required", `${summary.quorumRequiredPct}%`],
-    ["Quorum Status", quorumReached ? "Reached" : "Pending"],
+    ["AGM Name", agmName],
+    ["Generated", new Date().toISOString()],
+    ...metrics,
   ];
-  const csv = rows.map((row) => row.map((value) => `"${value}"`).join(",")).join("\n");
+  const csv = rows
+    .map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(","))
+    .join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = `agm-board-view-${activeYear}.csv`;
+  anchor.download = `agm-${activeYear}-board-summary-${Date.now()}.csv`;
   anchor.click();
   URL.revokeObjectURL(url);
 }
 
-export default function AgmBoardViewPage() {
+export default function BoardViewPage() {
   const { activeYear } = useAgmYear();
+  const queryClient = useQueryClient();
+  const recordAuditEvent = useRecordAuditEvent();
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [liveRefresh, setLiveRefresh] = useState(true);
-  const [fullscreenMode, setFullscreenMode] = useState(false);
-  const [overview, setOverview] = useState<AgmOverview | null>(null);
+  const { data: settings } = useSettings();
+  const { data: shareholders = [] } = useAllShareholders();
+  const { data: registrations = [] } = useAllRegistrations();
+  const { data: checkIns = [] } = useAllCheckIns();
+
+  const registrationsForYear = filterRegistrationsByYear(registrations, activeYear);
+  const checkInsForYear = filterCheckInsByRegistrations(checkIns, registrationsForYear);
+  const scopedShareholders = buildYearScopedShareholders(
+    shareholders,
+    registrationsForYear,
+    checkInsForYear,
+  );
+
+  const summary = useMemo(() => {
+    const total = scopedShareholders.length;
+    const registered = registrationsForYear.length;
+    const checkedIn = checkInsForYear.length;
+    const proxy = registrationsForYear.filter(
+      (registration) => registration.registrationType === RegistrationType.Proxy,
+    ).length;
+    const inPerson = registrationsForYear.filter(
+      (registration) => registration.registrationType === RegistrationType.InPerson,
+    ).length;
+    const attendanceRate = total > 0 ? (checkedIn / total) * 100 : 0;
+    const quorumRequired = Number(settings?.quorumThreshold ?? 50n);
+    const quorumReached = attendanceRate >= quorumRequired;
+
+    return {
+      total,
+      registered,
+      checkedIn,
+      proxy,
+      inPerson,
+      attendanceRate,
+      quorumRequired,
+      quorumReached,
+    };
+  }, [checkInsForYear, registrationsForYear, scopedShareholders, settings]);
+
+  const recentNames = useMemo(
+    () =>
+      [...registrationsForYear]
+        .sort((left, right) => Number(right.registeredAt - left.registeredAt))
+        .slice(0, 5)
+        .map((registration) => {
+          const shareholder = scopedShareholders.find(
+            (item) => item.id === registration.shareholderId,
+          );
+          return {
+            name: shareholder?.fullName ?? registration.shareholderId,
+            type:
+              registration.registrationType === RegistrationType.Proxy
+                ? "Proxy"
+                : "In Person",
+          };
+        }),
+    [registrationsForYear, scopedShareholders],
+  );
+
+  const exportMetrics: Array<[string, string]> = [
+    ["Total Shareholders", summary.total.toLocaleString()],
+    ["Registered", summary.registered.toLocaleString()],
+    ["Checked In", summary.checkedIn.toLocaleString()],
+    ["In Person", summary.inPerson.toLocaleString()],
+    ["Proxy", summary.proxy.toLocaleString()],
+    ["Attendance Rate", `${summary.attendanceRate.toFixed(1)}%`],
+    ["Quorum Required", `${summary.quorumRequired}%`],
+    ["Quorum Status", summary.quorumReached ? "Reached" : "Not Reached"],
+  ];
 
   useEffect(() => {
-    const load = () => {
-      void apiGetAgmOverview().then(setOverview);
-    };
-    load();
-    window.addEventListener(AGM_UPDATED_EVENT, load);
-    return () => {
-      window.removeEventListener(AGM_UPDATED_EVENT, load);
-    };
+    const onFullscreenChange = () =>
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () =>
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
   }, []);
 
-  const summary = overview?.summary ?? {
-    agmName: AGM_SUMMARY.agmName,
-    venue: AGM_SUMMARY.venue,
-    agmDate: AGM_SUMMARY.agmDate,
-    quorumRequiredPct: AGM_SUMMARY.quorumRequiredPct,
-    totalShareholders: 0,
-    registered: 0,
-    inPerson: 0,
-    proxy: 0,
-    checkedIn: 0,
+  useEffect(() => {
+    if (!liveRefresh) return;
+    const interval = window.setInterval(() => {
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["registrations"] });
+      void queryClient.invalidateQueries({ queryKey: ["checkins"] });
+      void queryClient.invalidateQueries({ queryKey: ["shareholders"] });
+    }, 8000);
+    return () => window.clearInterval(interval);
+  }, [liveRefresh, queryClient]);
+
+  const handleExport = () => {
+    exportBoardCsv(activeYear, settings?.agmName ?? "AGM Pro", exportMetrics);
+    void recordAuditEvent.mutateAsync({
+      action: "EXPORT_REPORT",
+      entityType: "board",
+      entityId: activeYear,
+      details: `Exported board summary for AGM ${activeYear}`,
+    });
   };
-  const attendanceRate = overview?.attendanceRate ?? 0;
-  const quorumReached = overview?.quorumReached ?? false;
-  const boardHighlights = overview?.boardHighlights ?? [];
-  const recentRegistrations = overview?.recentRegistrations ?? [];
-  const branchTurnout = overview?.branchTurnout ?? [];
+
+  const handleFullscreen = async () => {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+      return;
+    }
+    await document.documentElement.requestFullscreen();
+  };
 
   return (
-    <AgmLayout>
-      <div className="page-shell space-y-6" data-ocid="agm.board.page">
-        <section className="hero-panel">
-          <div className="hero-panel__content">
-            <div className="page-kicker">Board View</div>
-            <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-              <div className="max-w-3xl space-y-4">
-                <h1 className="text-4xl font-display font-bold text-foreground sm:text-5xl">
-                  AGM {activeYear} Executive Summary
-                </h1>
-                <p className="max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
-                  A board-facing summary screen for live turnout, quorum
-                  confidence, and executive visibility, embedded directly in the
-                  staff portal.
-                </p>
-              </div>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-12 px-6 text-sm font-semibold"
-                  onClick={() => overview && exportBoardSummaryCsv(overview, activeYear)}
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Export Board CSV
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-12 px-6 text-sm font-semibold"
-                  onClick={() => setLiveRefresh((value) => !value)}
-                >
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  {liveRefresh ? "Live Refresh On" : "Live Refresh Off"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-12 px-6 text-sm font-semibold"
-                  onClick={() => setFullscreenMode((value) => !value)}
-                >
-                  <Expand className="mr-2 h-4 w-4" />
-                  {fullscreenMode ? "Compact View" : "Focus View"}
-                </Button>
-              </div>
-            </div>
+    <Layout>
+      <div
+        className={`mx-auto ${
+          isFullscreen
+            ? "max-w-none min-h-screen bg-background px-3 py-5 sm:px-6 lg:px-10"
+            : "max-w-6xl"
+        } space-y-6`}
+        data-ocid="board.page"
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+              Chairman / Board View
+            </p>
+            <h1 className="font-display text-2xl font-bold text-foreground">
+              AGM {activeYear} Executive Summary
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Live board-facing attendance and quorum view for {settings?.agmName ?? "the AGM"}.
+            </p>
           </div>
-        </section>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <AgmYearSwitcher compact />
+            <Button
+              variant="outline"
+              className="min-h-[44px] gap-2"
+              onClick={handleExport}
+              data-ocid="board.export_button"
+            >
+              <Download className="h-4 w-4" />
+              Export Board CSV
+            </Button>
+            <Button
+              variant="outline"
+              className="min-h-[44px] gap-2"
+              onClick={() => setLiveRefresh((value) => !value)}
+            >
+              <RefreshCw className={`h-4 w-4 ${liveRefresh ? "animate-spin" : ""}`} />
+              {liveRefresh ? "Live Refresh On" : "Live Refresh Off"}
+            </Button>
+            <Button
+              variant="outline"
+              className="min-h-[44px] gap-2"
+              onClick={() => void handleFullscreen()}
+            >
+              <Expand className="h-4 w-4" />
+              {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+            </Button>
+          </div>
+        </div>
 
-        <section
-          className={`panel-sharp border border-primary/30 bg-primary/10 ${
-            fullscreenMode ? "px-7 py-7" : "px-5 py-5"
-          }`}
-        >
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+        <Card className="border-primary/25 bg-primary/10">
+          <CardContent
+            className={`grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-4 ${
+              isFullscreen ? "lg:gap-6 lg:p-8" : ""
+            }`}
+          >
             <div>
-              <div className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+              <p className="text-xs uppercase tracking-[0.18em] text-primary/80">
                 Quorum Status
-              </div>
-              <div className={`mt-2 font-display font-bold text-foreground ${fullscreenMode ? "text-4xl" : "text-2xl"}`}>
-                {quorumReached ? "Reached" : "Pending"}
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Attendance {attendanceRate.toFixed(1)}% • Required {summary.quorumRequiredPct}%
+              </p>
+              <p
+                className={`mt-2 font-display font-bold text-foreground ${
+                  isFullscreen ? "text-4xl" : "text-2xl"
+                }`}
+              >
+                {summary.quorumReached ? "Reached" : "Not Reached"}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Attendance {summary.attendanceRate.toFixed(1)}% · Required {summary.quorumRequired}%
               </p>
             </div>
             <div>
-              <div className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+              <p className="text-xs uppercase tracking-[0.18em] text-primary/80">
                 Registered
-              </div>
-              <div className={`mt-2 font-display font-bold text-foreground ${fullscreenMode ? "text-5xl" : "text-3xl"}`}>
+              </p>
+              <p
+                className={`mt-2 font-display font-bold text-foreground ${
+                  isFullscreen ? "text-5xl" : "text-3xl"
+                }`}
+              >
                 {summary.registered.toLocaleString()}
-              </div>
+              </p>
             </div>
             <div>
-              <div className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+              <p className="text-xs uppercase tracking-[0.18em] text-primary/80">
                 Checked In
-              </div>
-              <div className={`mt-2 font-display font-bold text-foreground ${fullscreenMode ? "text-5xl" : "text-3xl"}`}>
+              </p>
+              <p
+                className={`mt-2 font-display font-bold text-foreground ${
+                  isFullscreen ? "text-5xl" : "text-3xl"
+                }`}
+              >
                 {summary.checkedIn.toLocaleString()}
-              </div>
+              </p>
             </div>
             <div>
-              <div className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+              <p className="text-xs uppercase tracking-[0.18em] text-primary/80">
                 Proxy
-              </div>
-              <div className={`mt-2 font-display font-bold text-foreground ${fullscreenMode ? "text-5xl" : "text-3xl"}`}>
+              </p>
+              <p
+                className={`mt-2 font-display font-bold text-foreground ${
+                  isFullscreen ? "text-5xl" : "text-3xl"
+                }`}
+              >
                 {summary.proxy.toLocaleString()}
-              </div>
+              </p>
             </div>
-          </div>
-        </section>
+          </CardContent>
+        </Card>
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+        <div className="grid gap-4 lg:grid-cols-4">
           {[
             {
               label: "Total Shareholders",
-              value: summary.totalShareholders.toLocaleString(),
-              icon: <Users className="h-5 w-5 text-primary" />,
+              value: summary.total.toLocaleString(),
+              icon: Users,
             },
             {
-              label: "In-Person",
+              label: "In-Person Registrations",
               value: summary.inPerson.toLocaleString(),
-              icon: <UserCheck className="h-5 w-5 text-primary" />,
+              icon: UserCheck,
             },
             {
-              label: "Attendance Rate",
-              value: `${attendanceRate.toFixed(1)}%`,
-              icon: <TrendingUp className="h-5 w-5 text-primary" />,
+              label: "Live Attendance Rate",
+              value: `${summary.attendanceRate.toFixed(1)}%`,
+              icon: TrendingUp,
             },
             {
-              label: "Board Confidence",
-              value: quorumReached ? "Stable" : "Watch",
-              icon: <ShieldCheck className="h-5 w-5 text-primary" />,
+              label: "Proxy Registrations",
+              value: summary.proxy.toLocaleString(),
+              icon: ShieldCheck,
             },
           ].map((item) => (
-            <PortalCard
-              key={item.label}
-              elevated
-              className="min-h-[160px]"
-              data-ocid={`agm.board.metric.${item.label.toLowerCase().replace(/\s+/g, "_")}`}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    {item.label}
-                  </div>
-                  <div className="mt-5 font-display text-3xl font-bold text-foreground">
-                    {item.value}
-                  </div>
-                </div>
-                <div className="flex h-11 w-11 items-center justify-center border border-primary/20 bg-primary/10">
-                  {item.icon}
-                </div>
-              </div>
-            </PortalCard>
+            <Card key={item.label}>
+              <CardHeader className="pb-3">
+                <CardTitle
+                  className={`flex items-center gap-2 ${
+                    isFullscreen ? "text-lg" : "text-base"
+                  }`}
+                >
+                  <item.icon
+                    className={`${isFullscreen ? "h-5 w-5" : "h-4 w-4"} text-primary`}
+                  />
+                  {item.label}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p
+                  className={`font-display font-bold text-foreground ${
+                    isFullscreen ? "text-5xl" : "text-3xl"
+                  }`}
+                >
+                  {item.value}
+                </p>
+              </CardContent>
+            </Card>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.2fr_0.95fr]">
-          <PortalCard
-            elevated
-            title="Board Highlights"
-            subtitle="Executive indicators for the current AGM cycle."
-            data-ocid="agm.board.highlights.card"
-          >
-            <div className="space-y-3">
-              {boardHighlights.map((item) => (
-                <div
-                  key={item.label}
-                  className="panel-sharp flex items-center justify-between gap-3 border border-border/40 bg-muted/20 px-4 py-3"
-                >
-                  <div className="text-sm text-muted-foreground">{item.label}</div>
-                  <div className="font-semibold text-foreground">{item.value}</div>
-                </div>
-              ))}
-            </div>
-          </PortalCard>
-
-          <PortalCard
-            elevated
-            title="Latest Registration Signals"
-            subtitle="Fresh entries most likely to matter in board review."
-            data-ocid="agm.board.recent.card"
-          >
-            <div className="space-y-3">
-              {recentRegistrations.slice(0, 4).map((record) => (
-                <div
-                  key={`${record.name}-${record.time}`}
-                  className="panel-sharp border border-border/40 bg-muted/20 px-4 py-3"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="font-semibold text-foreground">{record.name}</div>
-                    <Badge variant="outline" className="text-xs">
-                      {record.type}
-                    </Badge>
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {record.branch} • {record.time}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </PortalCard>
-        </div>
-
-        <PortalCard
-          elevated
-          title="Branch Readiness"
-          subtitle="Board-ready turnout posture across AGM branches."
-          data-ocid="agm.board.readiness.card"
+        <div
+          className={`grid gap-4 ${
+            isFullscreen ? "xl:grid-cols-[1.5fr_1fr]" : "lg:grid-cols-[1.4fr_1fr]"
+          }`}
         >
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {branchTurnout.map((branch) => {
-              const checkedInPct =
-                branch.registered > 0
-                  ? (branch.checkedIn / branch.registered) * 100
-                  : 0;
-              return (
-                <div
-                  key={branch.branch}
-                  className="panel-sharp border border-border/40 bg-muted/20 p-4"
-                >
-                  <div className="flex items-center justify-between gap-3">
+          <Card>
+            <CardHeader>
+              <CardTitle
+                className={`flex items-center gap-2 ${
+                  isFullscreen ? "text-lg" : "text-base"
+                }`}
+              >
+                <ShieldCheck
+                  className={`${isFullscreen ? "h-5 w-5" : "h-4 w-4"} text-primary`}
+                />
+                Board Highlights
+              </CardTitle>
+            </CardHeader>
+            <CardContent
+              className={`space-y-3 text-muted-foreground ${
+                isFullscreen ? "text-base" : "text-sm"
+              }`}
+            >
+              <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                <span>AGM Year</span>
+                <span className="font-semibold text-foreground">{activeYear}</span>
+              </div>
+              <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                <span>Venue</span>
+                <span className="font-semibold text-foreground">{settings?.venue || "Not set"}</span>
+              </div>
+              <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                <span>AGM Date</span>
+                <span className="font-semibold text-foreground">{settings?.agmDate || "Not set"}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Quorum Position</span>
+                <Badge variant={summary.quorumReached ? "default" : "secondary"}>
+                  {summary.quorumReached ? "On track" : "Below target"}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className={isFullscreen ? "text-lg" : "text-base"}>
+                Most Recent Registrations
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {recentNames.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No registrations have been completed for AGM {activeYear} yet.
+                </p>
+              ) : (
+                recentNames.map((item) => (
+                  <div
+                    key={`${item.name}-${item.type}`}
+                    className="flex items-center justify-between border-b border-border/60 pb-3 last:border-b-0 last:pb-0"
+                  >
                     <div>
-                      <div className="font-semibold text-foreground">{branch.branch}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {branch.checkedIn.toLocaleString()} checked in • {branch.registered.toLocaleString()} registered
-                      </div>
+                      <p
+                        className={`font-medium text-foreground ${
+                          isFullscreen ? "text-lg" : ""
+                        }`}
+                      >
+                        {item.name}
+                      </p>
+                      <p
+                        className={`${isFullscreen ? "text-sm" : "text-xs"} text-muted-foreground`}
+                      >
+                        {item.type}
+                      </p>
                     </div>
-                    <Badge variant="outline" className="text-xs">
-                      {checkedInPct.toFixed(1)}%
-                    </Badge>
+                    <Badge variant="outline">{item.type}</Badge>
                   </div>
-                  <div className="mt-3 h-2.5 overflow-hidden border border-border/40 bg-background/70">
-                    <div
-                      className="h-full bg-primary"
-                      style={{ width: `${Math.min(checkedInPct, 100)}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </PortalCard>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </AgmLayout>
+    </Layout>
   );
 }

@@ -1,631 +1,543 @@
-import { AgmLayout } from "@/components/AgmLayout";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Layout } from "@/components/Layout";
+import { AgmYearSwitcher } from "@/components/AgmYearSwitcher";
+import { StatusBadge } from "@/components/StatusBadge";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useAgmYear } from "@/context/AgmYearContext";
+import { useToast } from "@/context/ToastContext";
+import { useAuth } from "@/hooks/use-auth";
 import {
-  AGM_UPDATED_EVENT,
-  apiCheckInAgmShareholder,
-  apiGetAgmShareholders,
-  apiRegisterAgmShareholder,
-} from "@/lib/backend-client";
-import { type AgmShareholderRecord } from "@/lib/agm-module";
+  useAllCheckIns,
+  useAllRegistrations,
+  useAllShareholders,
+  useYearRegistry,
+} from "@/hooks/use-backend";
 import {
-  buildRegistrationNotes,
-  normalizePhone,
-  validateGhanaCardId,
-  validateGhanaPhone,
-} from "@/lib/agm-registration-utils";
+  buildYearScopedShareholders,
+  filterCheckInsByRegistrations,
+  filterRegistrationsByYear,
+} from "@/lib/agm-year";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Clock3, Search, Upload } from "lucide-react";
-import { useAuth } from "@/store/auth";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { RegistrationType, ShareholderStatus, UserRole } from "@/types";
+import type { Registration, Shareholder } from "@/types";
+import { Search, Users, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { CancelRegistrationModal } from "./registration/CancelRegistrationModal";
+import { ExistingRegistration } from "./registration/ExistingRegistration";
+import { InPersonForm } from "./registration/InPersonForm";
+import { ProxyForm } from "./registration/ProxyForm";
+import { SuccessCard } from "./registration/SuccessCard";
 
-type RegistrationMode = "in-person" | "proxy";
+const REGISTRATION_PAGE_LIMIT = 500;
 
-interface FormErrors {
-  phone?: string;
-  ghanaCardId?: string;
-  verificationCode?: string;
-  chitNumber?: string;
-  consent?: string;
-  proxyName?: string;
-  proxyPhone?: string;
-  proxyGhanaCardId?: string;
+function useDebounce<T>(value: T, delay = 0): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
 }
 
-function formatDeskTimestamp() {
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-  }).format(new Date());
-}
-
-function statusLabel(record: AgmShareholderRecord) {
-  if (record.checkedInAt) return "Checked In";
-  if (record.registrationType !== "Not Registered") return "Registered";
-  return "Not Registered";
-}
-
-function statusClasses(record: AgmShareholderRecord) {
-  if (record.checkedInAt) {
-    return "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
-  }
-  if (record.registrationType !== "Not Registered") {
-    return "border-sky-500/30 bg-sky-500/10 text-sky-300";
-  }
-  return "border-border/60 bg-background/40 text-muted-foreground";
-}
-
-function ShareholderListItem({
+function ShareholderRow({
   shareholder,
   selected,
   onSelect,
+  index,
+  canRegister,
+  keepVisible,
 }: {
-  shareholder: AgmShareholderRecord;
+  shareholder: Shareholder;
   selected: boolean;
   onSelect: () => void;
+  index: number;
+  canRegister: boolean;
+  keepVisible?: boolean;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onSelect}
+    <div
+      data-ocid={`registration.shareholder_row.${index}`}
       className={cn(
-        "w-full border-b border-border/50 px-4 py-4 text-left transition-smooth last:border-b-0",
-        selected ? "bg-primary/30" : "hover:bg-muted/20",
+        "w-full px-4 py-3 border-b border-border last:border-b-0 flex items-start gap-3",
+        selected
+          ? "bg-primary/20 border-l-2 border-l-primary"
+          : "hover:bg-muted/30",
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1">
-          <div className="font-semibold text-foreground">{shareholder.fullName}</div>
-          <div className="text-sm text-muted-foreground">
-            # {shareholder.shareholderNumber}
-          </div>
-          <div className="text-sm text-muted-foreground">
-            {shareholder.shareholding.toLocaleString()} shares
-          </div>
-          {selected ? (
-            <div className="pt-1 text-xs text-primary">
-              Completing current registration...
-            </div>
-          ) : null}
+      <div className="flex-1 min-w-0">
+        <div className="font-medium text-foreground truncate">
+          {shareholder.fullName}
         </div>
-        <div className="flex flex-col items-end gap-2">
-          <Badge
-            variant="outline"
-            className={cn("h-7 border text-xs font-medium", statusClasses(shareholder))}
-          >
-            <Clock3 className="h-3 w-3" />
-            {statusLabel(shareholder)}
-          </Badge>
-          <span className="inline-flex h-10 items-center border border-primary/60 bg-primary px-4 text-sm font-semibold text-primary-foreground">
-            Register
-          </span>
+        <div className="text-sm text-muted-foreground">
+          # {shareholder.shareholderNumber}
         </div>
+        <div className="text-xs text-muted-foreground mt-0.5">
+          {Number(shareholder.shareholding).toLocaleString()} shares
+        </div>
+        {keepVisible && (
+          <div className="mt-1 text-[11px] font-medium text-primary">
+            Completing current registration...
+          </div>
+        )}
       </div>
-    </button>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <StatusBadge status={shareholder.status} size="sm" />
+        <button
+          type="button"
+          onClick={onSelect}
+          disabled={!canRegister}
+          className={cn(
+            "min-h-[40px] px-3 text-xs sm:text-sm font-medium border",
+            canRegister
+              ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
+              : "bg-muted text-muted-foreground border-border cursor-not-allowed",
+          )}
+          data-ocid={`registration.shareholder_row.${index}.register_button`}
+        >
+          {canRegister ? "Register" : "View"}
+        </button>
+      </div>
+    </div>
   );
 }
 
-function ErrorText({ message }: { message?: string }) {
-  if (!message) return null;
-  return <p className="text-xs text-destructive">{message}</p>;
-}
-
-export default function AgmRegistrationPage() {
-  const { activeYear, setActiveYear, yearOptions } = useAgmYear();
+export default function RegistrationPage() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [query, setQuery] = useState("");
-  const [shareholders, setShareholders] = useState<AgmShareholderRecord[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [mode, setMode] = useState<RegistrationMode>("in-person");
-  const [phone, setPhone] = useState("");
-  const [ghanaCardId, setGhanaCardId] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
-  const [chitNumber, setChitNumber] = useState("");
-  const [consentChecked, setConsentChecked] = useState(false);
-  const [proxyName, setProxyName] = useState("");
-  const [proxyPhone, setProxyPhone] = useState("");
-  const [proxyGhanaCardId, setProxyGhanaCardId] = useState("");
-  const [proxyDocumentName, setProxyDocumentName] = useState("");
-  const [autoCheckInTime, setAutoCheckInTime] = useState(formatDeskTimestamp);
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const proxyDocumentRef = useRef<HTMLInputElement | null>(null);
+  const [selected, setSelected] = useState<Shareholder | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileDialogOpen, setMobileDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<RegistrationType>(
+    RegistrationType.InPerson,
+  );
+  const [successReg, setSuccessReg] = useState<Registration | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [lockedShareholderId, setLockedShareholderId] = useState<string | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const { activeYear } = useAgmYear();
+  const { data: yearRegistry = [] } = useYearRegistry();
+
+  const debouncedQuery = useDebounce(query);
 
   useEffect(() => {
-    const load = () => {
-      void apiGetAgmShareholders().then((records) => {
-        setShareholders(records);
-      });
-    };
-    load();
-    window.addEventListener(AGM_UPDATED_EVENT, load);
-    return () => window.removeEventListener(AGM_UPDATED_EVENT, load);
-  }, [activeYear]);
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(max-width: 1023px)");
+    const update = () => setIsMobile(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
 
-  const filtered = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return shareholders;
-    return shareholders.filter((item) =>
-      [
-        item.fullName,
-        item.shareholderNumber,
-        item.ghanaCardId,
-        item.phone,
-      ].some((value) => value.toLowerCase().includes(normalized)),
-    );
-  }, [query, shareholders]);
+  const canEdit =
+    user?.role === UserRole.SuperAdmin ||
+    user?.role === UserRole.Admin ||
+    user?.role === UserRole.RegistrationOfficer;
+  const activeYearRecord = yearRegistry.find((record) => record.year === activeYear);
+  const registrationBlocked =
+    activeYearRecord?.isArchived || activeYearRecord?.isLocked;
 
-  useEffect(() => {
-    if (!filtered.find((item) => item.id === selectedId)) {
-      setSelectedId(filtered[0]?.id ?? null);
-    }
-  }, [filtered, selectedId]);
+  const { data: allShareholders = [], isLoading: searchLoading } =
+    useAllShareholders();
+  const { data: allRegistrations = [] } = useAllRegistrations();
+  const { data: allCheckIns = [] } = useAllCheckIns();
 
-  const selected =
-    filtered.find((item) => item.id === selectedId) ?? filtered[0] ?? null;
+  const registrationsForYear = filterRegistrationsByYear(
+    allRegistrations,
+    activeYear,
+  );
+  const checkInsForYear = filterCheckInsByRegistrations(
+    allCheckIns,
+    registrationsForYear,
+  );
+  const scopedShareholders = buildYearScopedShareholders(
+    allShareholders,
+    registrationsForYear,
+    checkInsForYear,
+  );
+  const existingReg = selected
+    ? registrationsForYear.find((item) => item.shareholderId === selected.id) ?? null
+    : null;
 
-  function resetForm(shareholder?: AgmShareholderRecord | null) {
-    setMode(shareholder?.registrationType === "Proxy" ? "proxy" : "in-person");
-    setPhone(shareholder?.phone ?? "");
-    setGhanaCardId(shareholder?.ghanaCardId ?? "");
-    setVerificationCode(shareholder?.verificationCode ?? "");
-    setChitNumber(shareholder?.shareholderNumber ?? "");
-    setConsentChecked(false);
-    setProxyName(shareholder?.proxyName ?? "");
-    setProxyPhone(shareholder?.proxyPhone ?? shareholder?.phone ?? "");
-    setProxyGhanaCardId("");
-    setProxyDocumentName("");
-    setAutoCheckInTime(formatDeskTimestamp());
-    setErrors({});
-  }
+  const normalizedQuery = debouncedQuery.trim().toLowerCase();
 
-  useEffect(() => {
-    if (selected) {
-      resetForm(selected);
-    }
-  }, [selectedId]);
-
-  function validateForm() {
-    const nextErrors: FormErrors = {};
-    const normalizedPhone = normalizePhone(phone);
-    const trimmedCard = ghanaCardId.trim().toUpperCase();
-
-    if (!normalizedPhone) {
-      nextErrors.phone = "Enter the shareholder contact number.";
-    } else if (!validateGhanaPhone(normalizedPhone)) {
-      nextErrors.phone = "Use a valid Ghana phone number.";
-    }
-
-    if (!trimmedCard) {
-      nextErrors.ghanaCardId = "Enter the Ghana Card ID number.";
-    } else if (!validateGhanaCardId(trimmedCard)) {
-      nextErrors.ghanaCardId = "Use the format GHA-123456789-1.";
-    }
-
-    if (!verificationCode.trim()) {
-      nextErrors.verificationCode = "Enter the verification code.";
-    }
-
-    if (!chitNumber.trim()) {
-      nextErrors.chitNumber = "Enter the chit number.";
-    }
-
-    if (!consentChecked) {
-      nextErrors.consent = "You must confirm the registration details.";
-    }
-
-    if (mode === "proxy") {
-      if (!proxyName.trim()) {
-        nextErrors.proxyName = "Enter the proxy full name.";
-      }
-      const normalizedProxyPhone = normalizePhone(proxyPhone);
-      if (!normalizedProxyPhone) {
-        nextErrors.proxyPhone = "Enter the proxy contact number.";
-      } else if (!validateGhanaPhone(normalizedProxyPhone)) {
-        nextErrors.proxyPhone = "Use a valid Ghana phone number.";
-      }
-      if (!proxyGhanaCardId.trim()) {
-        nextErrors.proxyGhanaCardId = "Enter the proxy Ghana Card ID number.";
-      } else if (!validateGhanaCardId(proxyGhanaCardId.trim().toUpperCase())) {
-        nextErrors.proxyGhanaCardId = "Use the format GHA-123456789-1.";
-      }
-    }
-
-    setErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
-  }
-
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    if (!selected) return;
-    if (!validateForm()) {
-      toast.error("Please fix the AGM registration fields and try again.");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const updated = await apiRegisterAgmShareholder({
-        shareholderId: selected.id,
-        mode,
-        phone: normalizePhone(phone),
-        ghanaCardId: ghanaCardId.trim().toUpperCase(),
-        verificationCode: verificationCode.trim(),
-        chitNumber: chitNumber.trim(),
-        operatorName: user?.fullname ?? "AGM Operator",
-        proxyName: mode === "proxy" ? proxyName.trim() : undefined,
-        proxyPhone: mode === "proxy" ? normalizePhone(proxyPhone) : undefined,
-      });
-
-      const checkedIn = await apiCheckInAgmShareholder({
-        shareholderId: updated.id,
-        operatorName: user?.fullname ?? "AGM Operator",
-        method: "manual",
-      });
-
-      const notes = buildRegistrationNotes([
-        ["AGM Year", activeYear],
-        ["Attendance Type", mode === "proxy" ? "Proxy" : "In Person"],
-        ["Shareholder Name", checkedIn.fullName],
-        ["Verification Code", verificationCode.trim()],
-        ["Chit Number", chitNumber.trim()],
-        ["Auto Check-In Time", autoCheckInTime],
-      ]);
-
-      setShareholders((current) =>
-        current.map((item) => (item.id === checkedIn.id ? checkedIn : item)),
+  const filteredShareholders = scopedShareholders
+    .filter((s) => s.status === ShareholderStatus.NotRegistered || s.id === lockedShareholderId)
+    .filter((s) => {
+      if (!normalizedQuery) return true;
+      return (
+        s.fullName.toLowerCase().includes(normalizedQuery) ||
+        s.shareholderNumber.toLowerCase().includes(normalizedQuery) ||
+        s.idNumber.toLowerCase().includes(normalizedQuery)
       );
-      setSelectedId(checkedIn.id);
-      toast.success(
-        mode === "proxy"
-          ? "Proxy registration and check-in completed."
-          : "Registration and check-in completed.",
-      );
-      resetForm(checkedIn);
-      setConsentChecked(false);
-      void notes;
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "The AGM registration could not be completed.",
-      );
-    } finally {
-      setIsSubmitting(false);
+    })
+    .sort((left, right) => left.fullName.localeCompare(right.fullName));
+
+  const totalMatches = filteredShareholders.length;
+  const shareholders = filteredShareholders.slice(0, REGISTRATION_PAGE_LIMIT);
+
+  const handleSelectShareholder = useCallback(
+    (s: Shareholder) => {
+      setSelected(s);
+      setLockedShareholderId(s.id);
+      setSuccessReg(null);
+      setActiveTab(RegistrationType.InPerson);
+      if (isMobile) {
+        setMobileDialogOpen(true);
+      }
+    },
+    [isMobile],
+  );
+
+  const handleRegistrationSuccess = useCallback(
+    (reg: Registration) => {
+      setSuccessReg(reg);
+    },
+    [],
+  );
+
+  const handleRegisterAnother = useCallback(() => {
+    setSelected(null);
+    setLockedShareholderId(null);
+    setMobileDialogOpen(false);
+    setSuccessReg(null);
+    setQuery("");
+    setTimeout(() => searchInputRef.current?.focus(), 50);
+  }, []);
+
+  const handleMobileDialogChange = useCallback((open: boolean) => {
+    setMobileDialogOpen(open);
+    if (!open) {
+      setSelected(null);
+      setSuccessReg(null);
+      setShowCancelModal(false);
     }
-  }
+  }, []);
 
-  return (
-    <AgmLayout>
-      <div className="page-shell space-y-5" data-ocid="agm.registration.page">
-        <div className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
-          <section className="panel-sharp border border-border/60 bg-card/90">
-            <div className="border-b border-border/50 px-5 py-5">
-              <h1 className="font-display text-3xl font-bold text-foreground">
-                Find Shareholder
-              </h1>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Registration list for AGM year {activeYear}
-              </p>
-            </div>
-
-            <div className="space-y-4 px-5 py-5">
-              <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                  AGM Year
-                </Label>
-                <select
-                  value={activeYear}
-                  onChange={(event) => setActiveYear(event.target.value)}
-                  className="h-12 w-[84px] border border-border/60 bg-background px-3 text-lg font-semibold text-foreground outline-none transition-smooth focus:border-primary"
-                >
-                  {yearOptions.map((year) => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Name, shareholder #, or ID..."
-                  className="h-12 border-border/60 bg-background pl-11"
-                />
-              </div>
-
-              <p className="text-sm text-muted-foreground">
-                Showing {filtered.length.toLocaleString()} of{" "}
-                {shareholders.length.toLocaleString()} results. Search still covers all names.
-              </p>
-            </div>
-
-            <div className="max-h-[980px] overflow-y-auto border-t border-border/50">
-              {filtered.map((shareholder) => (
-                <ShareholderListItem
-                  key={shareholder.id}
-                  shareholder={shareholder}
-                  selected={selected?.id === shareholder.id}
-                  onSelect={() => setSelectedId(shareholder.id)}
-                />
-              ))}
-              {filtered.length === 0 ? (
-                <div className="px-5 py-12 text-center text-sm text-muted-foreground">
-                  No shareholders matched this search.
-                </div>
-              ) : null}
-            </div>
-          </section>
-
-          <section className="panel-sharp border border-border/60 bg-card/90 px-6 py-6">
-            {!selected ? (
-              <div className="flex min-h-[420px] items-center justify-center text-muted-foreground">
-                Select a shareholder to continue registration.
-              </div>
-            ) : (
-              <form className="space-y-6" onSubmit={handleSubmit}>
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div>
-                    <h2 className="font-display text-4xl font-bold uppercase tracking-tight text-foreground">
-                      {selected.fullName}
-                    </h2>
-                    <p className="mt-2 text-2xl text-foreground">
-                      # {selected.shareholderNumber} <span className="text-muted-foreground">- {selected.shareholding.toLocaleString()} shares</span>
-                    </p>
-                  </div>
-                  <Badge
-                    variant="outline"
-                    className={cn("h-11 border px-4 text-xl font-medium", statusClasses(selected))}
-                  >
-                    <Clock3 className="h-4 w-4" />
-                    {statusLabel(selected)}
-                  </Badge>
-                </div>
-
-                <div className="grid grid-cols-2 border border-border/60 bg-background">
-                  <button
-                    type="button"
-                    onClick={() => setMode("in-person")}
-                    className={cn(
-                      "h-14 text-lg font-medium transition-smooth",
-                      mode === "in-person"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-foreground hover:bg-muted/30",
-                    )}
-                  >
-                    In Person
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMode("proxy")}
-                    className={cn(
-                      "h-14 border-l border-border/60 text-lg font-medium transition-smooth",
-                      mode === "proxy"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-foreground hover:bg-muted/30",
-                    )}
-                  >
-                    Proxy
-                  </button>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>AGM Year</Label>
-                    <Input value={activeYear} readOnly className="h-12 border-border/60 bg-background" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Automatic Check-In Time</Label>
-                    <Input value={autoCheckInTime} readOnly className="h-12 border-border/60 bg-background" />
-                  </div>
-                </div>
-
-                {mode === "proxy" ? (
-                  <>
-                    <div className="space-y-2">
-                      <Label>Proxy Nomination Document</Label>
-                      <input
-                        ref={proxyDocumentRef}
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png,.webp"
-                        className="hidden"
-                        onChange={(event) => {
-                          setProxyDocumentName(event.target.files?.[0]?.name ?? "");
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => proxyDocumentRef.current?.click()}
-                        className="flex min-h-[148px] w-full flex-col items-center justify-center gap-3 border border-dashed border-border/60 bg-background px-6 py-8 text-center transition-smooth hover:border-primary/50"
-                      >
-                        <Upload className="h-10 w-10 text-muted-foreground" />
-                        <div className="text-2xl font-semibold text-foreground">
-                          {proxyDocumentName || "Upload supporting document"}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          Optional. PDF, JPEG, PNG, or WEBP up to 10 MB.
-                        </div>
-                      </button>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Name of Shareholder</Label>
-                      <Input value={selected.fullName} readOnly className="h-12 border-border/60 bg-background" />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="shareholder-phone">Shareholder Contact Number *</Label>
-                      <Input
-                        id="shareholder-phone"
-                        value={phone}
-                        onChange={(event) => setPhone(event.target.value)}
-                        className="h-12 border-border/60 bg-background"
-                        placeholder="0241234567"
-                      />
-                      <ErrorText message={errors.phone} />
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="proxy-name">Proxy Full Name *</Label>
-                        <Input
-                          id="proxy-name"
-                          value={proxyName}
-                          onChange={(event) => setProxyName(event.target.value)}
-                          className="h-12 border-border/60 bg-background"
-                          placeholder="Enter proxy full name"
-                        />
-                        <ErrorText message={errors.proxyName} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="proxy-phone">Proxy Contact Number *</Label>
-                        <Input
-                          id="proxy-phone"
-                          value={proxyPhone}
-                          onChange={(event) => setProxyPhone(event.target.value)}
-                          className="h-12 border-border/60 bg-background"
-                          placeholder="0241234567"
-                        />
-                        <ErrorText message={errors.proxyPhone} />
-                      </div>
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="proxy-card">Proxy Ghana Card ID Number *</Label>
-                        <Input
-                          id="proxy-card"
-                          value={proxyGhanaCardId}
-                          onChange={(event) =>
-                            setProxyGhanaCardId(event.target.value.toUpperCase())
-                          }
-                          className="h-12 border-border/60 bg-background"
-                          placeholder="GHA-123456789-1"
-                        />
-                        <ErrorText message={errors.proxyGhanaCardId} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="verification-code-proxy">Verification Code *</Label>
-                        <Input
-                          id="verification-code-proxy"
-                          value={verificationCode}
-                          onChange={(event) => setVerificationCode(event.target.value)}
-                          className="h-12 border-border/60 bg-background"
-                          placeholder="Enter verified code"
-                        />
-                        <ErrorText message={errors.verificationCode} />
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="space-y-2">
-                      <Label>Shareholder Name</Label>
-                      <Input value={selected.fullName} readOnly className="h-12 border-border/60 bg-background" />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="contact-number">Contact Number *</Label>
-                      <Input
-                        id="contact-number"
-                        value={phone}
-                        onChange={(event) => setPhone(event.target.value)}
-                        className="h-12 border-border/60 bg-background"
-                        placeholder="0241234567"
-                      />
-                      <ErrorText message={errors.phone} />
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="ghana-card">Ghana Card ID Number *</Label>
-                        <Input
-                          id="ghana-card"
-                          value={ghanaCardId}
-                          onChange={(event) => setGhanaCardId(event.target.value.toUpperCase())}
-                          className="h-12 border-border/60 bg-background"
-                          placeholder="GHA-123456789-1"
-                        />
-                        <ErrorText message={errors.ghanaCardId} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="verification-code">Verification Code *</Label>
-                        <Input
-                          id="verification-code"
-                          value={verificationCode}
-                          onChange={(event) => setVerificationCode(event.target.value)}
-                          className="h-12 border-border/60 bg-background"
-                          placeholder="Enter verified code"
-                        />
-                        <ErrorText message={errors.verificationCode} />
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                <div className="space-y-2">
-                  <Label htmlFor="chit-number">Chit Number *</Label>
-                  <Input
-                    id="chit-number"
-                    value={chitNumber}
-                    onChange={(event) => setChitNumber(event.target.value)}
-                    className="h-12 border-border/60 bg-background"
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Auto-filled from the uploaded member list.
-                  </p>
-                  <ErrorText message={errors.chitNumber} />
-                </div>
-
-                <label className="flex items-start gap-4 border border-border/60 bg-background px-4 py-5">
-                  <input
-                    type="checkbox"
-                    checked={consentChecked}
-                    onChange={(event) => setConsentChecked(event.target.checked)}
-                    className="mt-1 h-5 w-5"
-                  />
-                  <div>
-                    <div className="text-xl font-semibold text-foreground">
-                      Signature / Consent
-                    </div>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {mode === "proxy"
-                        ? "I confirm that the proxy details entered above are correct and approved for registration."
-                        : "I confirm that the details entered above are correct and approved for registration."}
-                    </p>
-                  </div>
-                </label>
-                <ErrorText message={errors.consent} />
-
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="h-14 w-full text-xl font-semibold"
-                >
-                  <CheckCircle2 className="mr-2 h-5 w-5" />
-                  {isSubmitting
-                    ? "Saving..."
-                    : mode === "proxy"
-                      ? "Register Proxy and Check In"
-                      : "Register and Check In"}
-                </Button>
-              </form>
-            )}
-          </section>
+  const registrationPanel = !selected ? (
+    <div
+      className="flex flex-col items-center justify-center h-full min-h-[60vh] text-center px-6"
+      data-ocid="registration.right_panel.empty_state"
+    >
+      <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">
+        <Users className="w-8 h-8 text-primary/60" />
+      </div>
+      <h3 className="font-display text-xl font-semibold text-foreground mb-2">
+        Select a Shareholder
+      </h3>
+      <p className="text-muted-foreground max-w-xs">
+        Search and select a shareholder on the left to begin registration for AGM {activeYear}.
+      </p>
+    </div>
+  ) : successReg ? (
+    <div className="p-4 sm:p-6 max-w-xl mx-auto">
+      <SuccessCard
+        registration={successReg}
+        shareholder={selected}
+        onRegisterAnother={handleRegisterAnother}
+      />
+    </div>
+  ) : existingReg ? (
+    <div className="p-4 sm:p-6 max-w-xl mx-auto">
+      <ExistingRegistration
+        registration={existingReg}
+        shareholder={selected}
+        canEdit={canEdit}
+        onCancelClick={() => setShowCancelModal(true)}
+        onEditSuccess={(reg) => {
+          showToast("Registration updated", "success");
+          setSuccessReg(reg);
+        }}
+      />
+    </div>
+  ) : (
+    <div className="p-4 sm:p-6 max-w-xl mx-auto">
+      <div className="mb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="font-display text-xl font-bold text-foreground">
+              {selected.fullName}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              # {selected.shareholderNumber} •{" "}
+              {Number(selected.shareholding).toLocaleString()} shares
+            </p>
+          </div>
+          <StatusBadge status={selected.status} />
         </div>
       </div>
-    </AgmLayout>
+
+      <div
+        className="flex border border-border bg-muted/40 p-1 mb-6 gap-1"
+        data-ocid="registration.type_tab"
+      >
+        {[
+          { value: RegistrationType.InPerson, label: "In Person" },
+          { value: RegistrationType.Proxy, label: "Proxy" },
+        ].map((tab) => (
+          <button
+            key={tab.value}
+            type="button"
+            data-ocid={`registration.tab.${tab.value.toLowerCase()}`}
+            onClick={() => setActiveTab(tab.value)}
+            className={cn(
+              "flex-1 py-2 px-4 text-sm font-medium min-h-[44px]",
+              activeTab === tab.value
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted",
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === RegistrationType.InPerson ? (
+        <InPersonForm
+          shareholder={selected}
+          onSuccess={handleRegistrationSuccess}
+        />
+      ) : (
+        <ProxyForm shareholder={selected} onSuccess={handleRegistrationSuccess} />
+      )}
+    </div>
+  );
+
+  return (
+    <Layout>
+      <div
+        data-ocid="registration.page"
+        className="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)] lg:h-[calc(100vh-4rem)] overflow-hidden"
+      >
+        <div className="w-full lg:w-[380px] xl:w-[420px] flex-shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-border bg-card">
+          <div className="p-4 border-b border-border">
+            <div className="mb-3 flex flex-col gap-3">
+              <div>
+                <h2 className="font-display font-semibold text-lg text-foreground">
+                  Find Shareholder
+                </h2>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Registration list for AGM year {activeYear}
+                </p>
+              </div>
+              <AgmYearSwitcher compact />
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              <Input
+                ref={searchInputRef}
+                data-ocid="registration.search_input"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Name, shareholder #, or ID..."
+                className="pl-9 pr-9 h-11 text-base bg-muted/40 border-input focus:bg-background"
+                autoFocus
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label="Clear search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            {!searchLoading && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Showing {shareholders.length.toLocaleString()} of{" "}
+                {totalMatches.toLocaleString()} result
+                {totalMatches !== 1 ? "s" : ""}. Search still covers all names.
+              </p>
+            )}
+          </div>
+
+          <div
+            className="flex-1 overflow-y-auto"
+            data-ocid="registration.shareholder_list"
+          >
+            {searchLoading ? (
+              <LoadingSpinner label="Loading shareholders" className="px-4" />
+            ) : shareholders.length === 0 ? (
+              <div
+                className="flex flex-col items-center justify-center h-48 text-center px-6"
+                data-ocid="registration.empty_state"
+              >
+                <Users className="w-10 h-10 text-muted-foreground/40 mb-3" />
+                <p className="text-sm text-muted-foreground">
+                  {query
+                    ? "No shareholders match your search"
+                    : "Type to search shareholders"}
+                </p>
+              </div>
+            ) : (
+              shareholders.map((s, idx) => (
+                <ShareholderRow
+                  key={s.id}
+                  shareholder={s}
+                  selected={selected?.id === s.id}
+                  onSelect={() => handleSelectShareholder(s)}
+                  index={idx + 1}
+                  canRegister={canEdit && !registrationBlocked}
+                  keepVisible={lockedShareholderId === s.id && successReg === null}
+                />
+              ))
+            )}
+          </div>
+          {registrationBlocked && (
+            <div className="border-t border-border px-4 py-3 text-xs text-amber-300 bg-amber-500/10">
+              AGM {activeYear} is {activeYearRecord?.isArchived ? "archived" : "locked"}.
+              Registration is disabled until an administrator reopens the year.
+            </div>
+          )}
+        </div>
+
+        <div className="hidden lg:block flex-1 overflow-y-auto bg-background">
+          {!selected ? (
+            <div
+              className="flex flex-col items-center justify-center h-full min-h-[60vh] text-center px-6"
+              data-ocid="registration.right_panel.empty_state"
+            >
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">
+                <Users className="w-8 h-8 text-primary/60" />
+              </div>
+              <h3 className="font-display text-xl font-semibold text-foreground mb-2">
+                Select a Shareholder
+              </h3>
+              <p className="text-muted-foreground max-w-xs">
+                Search and select a shareholder on the left to begin
+                registration.
+              </p>
+            </div>
+          ) : successReg ? (
+            <div className="p-6 max-w-xl mx-auto">
+              <SuccessCard
+                registration={successReg}
+                shareholder={selected}
+                onRegisterAnother={handleRegisterAnother}
+              />
+            </div>
+          ) : existingReg ? (
+            <div className="p-6 max-w-xl mx-auto">
+              <ExistingRegistration
+                registration={existingReg}
+                shareholder={selected}
+                canEdit={canEdit}
+                onCancelClick={() => setShowCancelModal(true)}
+                onEditSuccess={(reg) => {
+                  showToast("Registration updated", "success");
+                  setSuccessReg(reg);
+                }}
+              />
+            </div>
+          ) : (
+            <div className="p-6 max-w-xl mx-auto">
+              <div className="mb-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="font-display text-xl font-bold text-foreground">
+                      {selected.fullName}
+                    </h2>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      # {selected.shareholderNumber} •{" "}
+                      {Number(selected.shareholding).toLocaleString()} shares
+                    </p>
+                  </div>
+                  <StatusBadge status={selected.status} />
+                </div>
+              </div>
+
+              <div
+                className="flex border border-border bg-muted/40 p-1 mb-6 gap-1"
+                data-ocid="registration.type_tab"
+              >
+                {[
+                  { value: RegistrationType.InPerson, label: "In Person" },
+                  { value: RegistrationType.Proxy, label: "Proxy" },
+                ].map((tab) => (
+                  <button
+                    key={tab.value}
+                    type="button"
+                    data-ocid={`registration.tab.${tab.value.toLowerCase()}`}
+                    onClick={() => setActiveTab(tab.value)}
+                    className={cn(
+                      "flex-1 py-2 px-4 text-sm font-medium min-h-[44px]",
+                      activeTab === tab.value
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted",
+                    )}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {activeTab === RegistrationType.InPerson ? (
+                <InPersonForm
+                  shareholder={selected}
+                  onSuccess={handleRegistrationSuccess}
+                />
+              ) : (
+                <ProxyForm
+                  shareholder={selected}
+                  onSuccess={handleRegistrationSuccess}
+                />
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {isMobile && mobileDialogOpen && selected && (
+        <div
+          className="fixed inset-0 z-50 lg:hidden overflow-hidden"
+          data-ocid="registration.mobile.dialog"
+        >
+          <div
+            className="absolute inset-0 bg-black/70"
+            onClick={() => handleMobileDialogChange(false)}
+            aria-hidden="true"
+          />
+          <div
+            className="absolute inset-x-2 top-2 bottom-2 flex flex-col border border-border bg-card shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-border bg-card px-4 py-3">
+              <h2 className="font-display text-base font-semibold text-foreground">
+                Register Shareholder
+              </h2>
+              <button
+                type="button"
+                onClick={() => handleMobileDialogChange(false)}
+                className="min-h-[40px] min-w-[40px] border border-border bg-background text-muted-foreground"
+                aria-label="Close registration dialog"
+                data-ocid="registration.mobile.dialog.close_button"
+              >
+                <X className="w-4 h-4 mx-auto" />
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-background [touch-action:pan-y] [webkit-overflow-scrolling:touch]">
+              {registrationPanel}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCancelModal && selected && existingReg && (
+        <CancelRegistrationModal
+          registration={existingReg}
+          shareholder={selected}
+          onClose={() => setShowCancelModal(false)}
+          onSuccess={() => {
+            setShowCancelModal(false);
+            setSelected(null);
+            setLockedShareholderId(null);
+            setSuccessReg(null);
+            showToast("Registration cancelled", "success");
+          }}
+        />
+      )}
+    </Layout>
   );
 }

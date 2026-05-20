@@ -298,3 +298,175 @@ export function unwrapOk<T>(result: ApiResult<T>): T {
   if (isOk(result)) return result.ok;
   throw new Error((result as { err: string }).err);
 }
+
+export enum CheckInMethod {
+  Manual = "Manual",
+  QR = "QR",
+}
+
+export enum ImportStatus {
+  Pending = "Pending",
+  Processing = "Processing",
+  Complete = "Complete",
+  Failed = "Failed",
+}
+
+export enum RegistrationType {
+  InPerson = "InPerson",
+  Proxy = "Proxy",
+}
+
+export enum ShareholderStatus {
+  NotRegistered = "NotRegistered",
+  RegisteredInPerson = "RegisteredInPerson",
+  RegisteredProxy = "RegisteredProxy",
+  CheckedIn = "CheckedIn",
+}
+
+export enum UserRole {
+  SuperAdmin = "SuperAdmin",
+  Admin = "Admin",
+  RegistrationOfficer = "RegistrationOfficer",
+  ReportsViewer = "ReportsViewer",
+  BoardViewer = "BoardViewer",
+  Viewer = "Viewer",
+}
+
+export interface AGMSettings {
+  agmName: string;
+  agmDate: string;
+  venue: string;
+  quorumThreshold: bigint;
+  sessionTimeoutMinutes: bigint;
+}
+
+export interface Shareholder {
+  id: string;
+  shareholderNumber: string;
+  fullName: string;
+  idNumber: string;
+  email: string;
+  phone: string;
+  shareholding: bigint;
+  status: ShareholderStatus;
+  importedAt: bigint;
+  importedBy: string;
+}
+
+export interface ShareholderInput {
+  shareholderNumber: string;
+  fullName: string;
+  idNumber: string;
+  email: string;
+  phone: string;
+  shareholding: bigint;
+}
+
+export interface ProxyData {
+  proxyName: string;
+  proxyContact: string;
+  proxyProofKey: string;
+  proxyProofValidated: boolean;
+  proxyFraudFlags: string[];
+  notes: string;
+}
+
+export interface Registration {
+  id: string;
+  shareholderId: string;
+  registrationType: RegistrationType;
+  verificationCode: string;
+  proxyName: string;
+  proxyContact: string;
+  proxyProofKey: string;
+  proxyProofValidated: boolean;
+  proxyFraudFlags: string[];
+  notes: string;
+  registeredBy: string;
+  registeredAt: bigint;
+}
+
+export interface RegistrationUpdate {
+  verificationCode?: string;
+  proxyName?: string;
+  proxyContact?: string;
+  proxyProofKey?: string;
+  proxyProofValidated?: boolean;
+  proxyFraudFlags?: string[];
+  notes?: string;
+}
+
+export interface CheckIn {
+  id: string;
+  shareholderId: string;
+  registrationId: string;
+  checkedInBy: string;
+  checkedInAt: bigint;
+  method: CheckInMethod;
+}
+
+export interface AppUser {
+  username: string;
+  role: UserRole;
+  phoneNumber?: string;
+  isActive: boolean;
+  lastLogin?: bigint;
+}
+
+export interface Session {
+  token: string;
+  username: string;
+  role: UserRole;
+  expiresAt: bigint;
+}
+
+export interface AuditEntry {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  performedBy: string;
+  performedAt: bigint;
+  details: string;
+}
+
+export interface ImportBatch {
+  id: string;
+  filename: string;
+  status: ImportStatus;
+  totalRows: bigint;
+  importedRows: bigint;
+  duplicates: bigint;
+  uploadedBy: string;
+  uploadedAt: bigint;
+}
+
+export interface BulkCreateResult {
+  inserted: bigint;
+  duplicates: bigint;
+  errors: string[];
+}
+
+export interface DashboardMetrics {
+  totalShareholders: bigint;
+  registeredCount: bigint;
+  checkedInCount: bigint;
+  proxyCount: bigint;
+  inPersonCount: bigint;
+  attendanceRate: number;
+  quorumReached: boolean;
+}
+
+export interface SearchResult {
+  items: Shareholder[];
+  total: bigint;
+  page: bigint;
+  pageSize: bigint;
+}
+
+export interface LoginResponse {
+  token: string;
+  username: string;
+  role: UserRole;
+  mustChangePassword: boolean;
+}

@@ -82,6 +82,10 @@ const ACTIVITY_LOG_UPDATED_EVENT = "bcb:activity-log-updated";
 const ACTIVITY_LOG_KEY = "bcb_activity_log";
 const ACTIVITY_LOG_LIMIT = 40;
 
+export function buildClient<TActor>(actor: TActor): TActor {
+  return actor;
+}
+
 export interface ActivityLogEntry {
   id: string;
   title: string;
